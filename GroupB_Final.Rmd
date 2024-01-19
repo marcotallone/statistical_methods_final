@@ -1,0 +1,32 @@
+---
+title: "GroupB_Final"
+author: "S.Carpenè, G.Fantuzzi, V.Nigam, M.Tallone, A.Valentinis"
+date: "2024-02-14"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '3'
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Subtitle1
+
+Bla bla bla
+
+```{r}
+
+```
+
+## Subtitle2
+
+Bla bla bla
