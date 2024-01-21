@@ -72,10 +72,10 @@ Variables description:
 | # | Variable Name | Description | Type |
 |:---:|:---|:---|:---:|
 | 1 | `CLIENTNUM` | Client number. Unique identifier for the customer holding the account. | 🔢 |
-| 2 | `Attrition_Flag` | Internal event (customer activity) variable - if the account is closed then 1 else 0 | 🔀 |
+| 2 | `Attrition_Flag` | Internal event (customer activity) variable - if the account is closed then 1 else 0 | 🔀* |
 | 3 | `Costumer_Age` | Demographic variable - Customer's Age in Years | 🔢 |
-| 4 | `Gender` | Demographic variable - M=Male, F=Female | 🆎 |
-| 5 | `Dependent Count` | Demographic variable - Number of dependents | 🔢 |
+| 4 | `Gender` | Demographic variable - M=Male, F=Female | 🔀* |
+| 5 | `Dependent_Count` | Demographic variable - Number of dependents | 🔢 |
 | 6 | `Education_Level` | Demographic variable - Educational Qualification of the account holder (example: high school, college graduate, etc.) | 🆎 |
 | 7 | `Marital_Status` | Demographic variable - Married, Single, Divorced, Unknown | 🆎 |
 | 8 | `Income_Category` | Demographic variable - Annual Income Category of the account holder (< $40K, $40K - 60K, $60K - $80K, $80K-$120K, > | 🆎 |
@@ -95,6 +95,8 @@ Variables description:
 | 22 | ~~`Naive_Bayes_Cla..._1`~~ | ~~Naive Bayes~~ | ~~🔢~~ |
 | 23 | ~~`Naive_Bayes_Cla..._2`~~ | ~~Naive Bayes~~ | ~~🔢~~ |
 
+> \* *after conversion*
+
 ## Importing the dataset
 
 To import and use the dataset in an R script or R Markdown file, use the following code.
@@ -105,7 +107,46 @@ setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
 # Load the dataset from the datasets/ folder
 bank <- read.csv("path/to/datasets/BankChurners.csv", sep = ",")
+```
 
-# ⚠️ Remove the last two columns as suggested in the README
+## Preprocessing
+
+>[!NOTE]
+> The preprocessing steps can be found in the `r_scripts/preprocessing.R` file.
+
+As suggested from the Kaggel description of the dataset, we removed the last two columns.
+
+```r
+# Remove the last two columns as suggested in the README
 bank <- bank[, -c(22, 23)]
 ```
+
+Then, we removed the `CLIENTNUM` column as it is just an identifier.
+
+```r
+# Remove the first column as it is just an index
+bank <- bank[, -1]
+```
+
+After that, it was necessary to convert the `Attrition_Flag` column to a binary variable:
+
+* `0` if the account is not closed, i.e. for the `Existing Customer` value
+* `1` if the account is closed, i.e. for the `Attrited Customer` value
+
+```r
+# Convert the Attrition_Flag column to a binary variable
+bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
+```
+
+Accordingly all categorical variables were coverted to factors:
+
+```r
+# Convert all categorical variables to factors
+bank$Gender <- as.factor(bank$Gender)
+bank$Education_Level <- as.factor(bank$Education_Level)
+bank$Marital_Status <- as.factor(bank$Marital_Status)
+bank$Income_Category <- as.factor(bank$Income_Category)
+bank$Card_Category <- as.factor(bank$Card_Category)
+```
+
+Luckily there were no missing values in the dataset, so we could proceed with the analysis.

@@ -24,25 +24,19 @@ bank$Marital_Status <- as.factor(bank$Marital_Status)
 bank$Income_Category <- as.factor(bank$Income_Category)
 bank$Card_Category <- as.factor(bank$Card_Category)
 
-# LOGISTIC REGRESSION ---------------------------------------------------------
-# FIlter numerical variables
-bank_num <- bank[, sapply(bank, is.numeric)]
+# VIEWING THE DATASET ---------------------------------------------------------
 
-# Logistic regression to predict the Attrition_Flag variable
-# only with the numerical variables
-bank_logistic <- glm(Attrition_Flag ~ .,
-                     data = bank_num,
-                     family = binomial(link = "logit"))
+# View the dataset
+View(bank)
 
-# Summary of the model
-summary(bank_logistic)
+# Summary
+summary(bank)
 
-# Removing the variables with a p-value > 0.05
-bank_filtered <- bank_num[, -c(2, 4, 8, 10, 11, 15)]
+# Structure
+str(bank)
 
-# Logistic regression to predict the Attrition_Flag variable
-# only with the numerical variables and the variables with a p-value < 0.05
-bank_logistic_filtered <- glm(Attrition_Flag ~ .,
-                              data = bank_filtered,
-                              family = binomial(link = "logit"))
-summary(bank_logistic_filtered)
+# Number of rows
+nrow(bank)
+
+# Total number of NA
+sum(is.na(bank))
