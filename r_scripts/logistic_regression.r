@@ -102,12 +102,18 @@ cv <- function(data, k = 10) {
   average_aic <- mean(aic)
   average_bic <- mean(bic)
 
-  # Print the average accuracy
+  # Compute the standard deviation of the accuracy, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_aic <- sd(aic)
+  sd_bic <- sd(bic)
+
+  # Print the average accuracy, AIC and BIC with their standard deviations
   cat("----------------------------------------\n")
-  cat("Average accuracy:", round(average_accuracy * 100, 2), "%\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
   cat("----------------------------------------\n")
-  cat("Average AIC:", average_aic, "\n")
-  cat("Average BIC:", average_bic, "\n")
+  cat("Average AIC:", average_aic, "+/-", sd_aic, "\n")
+  cat("Average BIC:", average_bic, "+/-", sd_bic, "\n")
   cat("----------------------------------------\n")
 }
 
