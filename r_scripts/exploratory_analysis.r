@@ -1,5 +1,8 @@
 # LIBRARIES --------------------------------------------------------------------
 library(corrplot)
+library(hexbin)
+library(ggplot2)
+library(ggExtra)
 
 # LOADING AND PREPROCESSING ----------------------------------------------------
 
@@ -43,7 +46,8 @@ round(cor(bank_num), 2)
 
 # Plot the correlation matrix as a heatmap with a color scale from -1 to 1
 corrplot(cor(bank_num), method = "color", type = "upper", tl.cex = 0.7,
-         col = colorRampPalette(c("#000075", "white", "#a50000"))(100))
+         col = colorRampPalette(c("#000075", "white", "#a50000"))(100),
+         addCoef.col = "black", number.cex = 0.7)
 
 # 2. Boxplots of numerical variables w.r.t. Attrition_Flag
 # -----------------------------------------------------------------------------
@@ -171,3 +175,101 @@ barplot(prop.table(table(bank$Attrition_Flag,
         legend.text = c("Not Churned", "Churned"),
         xlab = "Change in transaction amount (Q4 over Q1)",
         ylab = "Proportion")
+
+barplot(prop.table(table(bank$Attrition_Flag,
+                         cut(bank$Total_Trans_Amt, breaks = 10))),
+        beside = TRUE,
+        legend.text = c("Not Churned", "Churned"),
+        xlab = "Total Transaction Amount", ylab = "Proportion")
+
+barplot(prop.table(table(bank$Attrition_Flag,
+                         cut(bank$Total_Trans_Ct, breaks = 10))),
+        beside = TRUE,
+        legend.text = c("Not Churned", "Churned"),
+        xlab = "Total Transaction Count", ylab = "Proportion")
+
+
+# 4. Other usefulf plots -------------------------------------------------------
+
+# Scatterplot of Total_Trans_Ct vs Total_Trans_Amt where the points are colored
+# using the Attrition_Flag variable
+plot(bank$Total_Trans_Amt, bank$Total_Trans_Ct,
+     col = ifelse(bank$Attrition_Flag == 1, "red", "blue"),
+     pch = 19, # Use filled circles for points
+     xlab = "Total Transaction Amount", ylab = "Total Transaction Count")
+legend("topright", legend = c("Existing Customer", "Attrited Customer"),
+       col = c("blue", "red"), pch = 19)
+
+# Density plot of Total_Trans_Ct vs Total_Trans_Amt
+# Create a hexbin plot
+hexbinplot(Total_Trans_Ct ~ Total_Trans_Amt, data = bank,
+           xlab = "Total Transaction Amount", ylab = "Total Transaction Count",
+           main = "Hexbin Plot")
+
+# 5. Plots for categorical variables -------------------------------------------
+
+# Barplot of Attrition_Flag
+barplot(prop.table(table(bank$Attrition_Flag)),
+        xlab = "Attrition Flag", ylab = "Proportion")
+
+#6. Plots of distributions -----------------------------------------------------
+
+# Histogram of Customer_Age
+hist(bank$Customer_Age, xlab = "Age (years)", ylab = "Frequency")
+
+# Histogram of Dependent_count
+hist(bank$Dependent_count, xlab = "Number of dependents", ylab = "Frequency")
+
+# Histogram of Months_on_book
+hist(bank$Months_on_book, xlab = "Months on book", ylab = "Frequency")
+
+# Histogram of Contacts_Count_12_mon
+hist(bank$Contacts_Count_12_mon,
+     xlab = "Number of contacts in the last 12 months", ylab = "Frequency")
+
+# Histogram of Total_Relationship_Count
+hist(bank$Total_Relationship_Count,
+     xlab = "Total number of products held", ylab = "Frequency")
+
+# Histogram of Months_Inactive_12_mon
+hist(bank$Months_Inactive_12_mon,
+     xlab = "Months inactive in the last 12 months", ylab = "Frequency")
+
+# Histogram of Avg_Utilization_Ratio
+hist(bank$Avg_Utilization_Ratio,
+     xlab = "Average card utilization ratio", ylab = "Frequency")
+
+# Histogram of Credit_Limit
+hist(bank$Credit_Limit, xlab = "Credit limit", ylab = "Frequency")
+
+# Histogram of Total_Revolving_Bal
+hist(bank$Total_Revolving_Bal, xlab = "Total revolving balance",
+     ylab = "Frequency")
+
+# Histogram of Avg_Open_To_Buy
+hist(bank$Avg_Open_To_Buy, xlab = "Average open to buy", ylab = "Frequency")
+
+# Histogram of Total_Amt_Chng_Q4_Q1
+hist(bank$Total_Amt_Chng_Q4_Q1,
+     xlab = "Change in transaction amount (Q4 over Q1)", ylab = "Frequency")
+
+# Histogram of Total_Trans_Amt
+hist(bank$Total_Trans_Amt, xlab = "Total Transaction Amount",
+     ylab = "Frequency")
+
+hist(log(bank$Total_Trans_Amt), xlab = "Log of Total Transaction Amount",
+     ylab = "Frequency")
+
+# Histogram of Total_Trans_Ct
+hist(bank$Total_Trans_Ct, xlab = "Total Transaction Count",
+     ylab = "Frequency")
+
+hist(log(bank$Total_Trans_Ct), xlab = "log of Total Transaction Count",
+     ylab = "Frequency")
+
+# Histogram of Total_Ct_Chng_Q4_Q1
+hist(bank$Total_Ct_Chng_Q4_Q1,
+     xlab = "Change in transaction count (Q4 over Q1)", ylab = "Frequency")
+
+hist(log(bank$Total_Ct_Chng_Q4_Q1),
+     xlab = "Change in transaction count (Q4 over Q1)", ylab = "Frequency")

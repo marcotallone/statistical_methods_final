@@ -24,6 +24,9 @@ bank$Marital_Status <- as.factor(bank$Marital_Status)
 bank$Income_Category <- as.factor(bank$Income_Category)
 bank$Card_Category <- as.factor(bank$Card_Category)
 
+# FIlter numerical variables
+bank_num <- bank[, sapply(bank, is.numeric)]
+
 # VIEWING THE DATASET ---------------------------------------------------------
 
 # View the dataset

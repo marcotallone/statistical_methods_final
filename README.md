@@ -19,7 +19,11 @@
 * [x] Download dataset
 * [x] R Markdown
 * [x] R Scripts Folder
-* [ ] Add Contributors
+* [x] Add Contributors
+* [x] Preprocessing script
+* [x] Exploratory Analysis
+* [ ] Ranking variables importance
+* [ ] Logistic Regression
 * [ ] ...
 
 ## Project Structure
