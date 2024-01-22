@@ -25,8 +25,7 @@
 * [x] Feature selection and variables importance
 * [x] Logistic Regression
 * [x] K-fold CV
-* [ ] Precision
-* [ ] Recall
+* [ ] Check computation of AUC, fpr and fnr
 * [ ] Make better exploratory analysis plots
 * [ ] Prepare presentation slides
 
@@ -188,17 +187,64 @@ The final model has been built using the following variables:
 * `Total_Trans_Ct`: the total transaction count in the last 12 months
 * `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
 
+The result of the ANOVA test is the following:
+
+```terminal
+Analysis of Deviance Table
+
+Model: binomial, link: logit
+
+Response: Attrition_Flag
+
+Terms added sequentially (first to last)
+
+
+                         Df Deviance Resid. Df Resid. Dev  Pr(>Chi)    
+NULL                                     10126     8927.2              
+Gender                    1    14.12     10125     8913.1 0.0001715 ***
+Marital_Status            3     5.90     10122     8907.2 0.1165956    
+Income_Category           5    11.16     10117     8896.0 0.0482313 *  
+Total_Relationship_Count  1   225.84     10116     8670.2 < 2.2e-16 ***
+Months_Inactive_12_mon    1   230.09     10115     8440.1 < 2.2e-16 ***
+Contacts_Count_12_mon     1   495.91     10114     7944.2 < 2.2e-16 ***
+Total_Revolving_Bal       1   628.78     10113     7315.4 < 2.2e-16 ***
+Total_Trans_Amt           1   679.95     10112     6635.4 < 2.2e-16 ***
+Total_Trans_Ct            1  1800.47     10111     4835.0 < 2.2e-16 ***
+Total_Ct_Chng_Q4_Q1       1   430.12     10110     4404.9 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+While the VIF test:
+
+```terminal
+                             GVIF Df GVIF^(1/(2*Df))
+Gender                   3.569521  1        1.889318
+Marital_Status           1.065029  3        1.010556
+Income_Category          3.574890  5        1.135864
+Total_Relationship_Count 1.117525  1        1.057130
+Months_Inactive_12_mon   1.024143  1        1.012000
+Contacts_Count_12_mon    1.032402  1        1.016072
+Total_Revolving_Bal      1.042901  1        1.021225
+Total_Trans_Amt          6.669191  1        2.582478
+Total_Trans_Ct           6.845917  1        2.616470
+Total_Ct_Chng_Q4_Q1      1.096680  1        1.047225
+```
+
 ### Model assessment
 
 In the relative `R` script, appropiate learning and prediction functions have been defined as well as methods to compute effectveness metrics on the whole dataset and performing a k-fold cross validation.\
 The effectiveness metrics used so far are the following:
 
 * Accuracy
-<!-- * Precision
-* Recall -->
+* AUC
+* FPR (False Positive Rate)
+* FNR (False Negative Rate)
 * Confusion matrix (*only in the whole dataset case*)
 * AIC
 * BIC
+
+The Dummy classifier has been taken as a baseline for comparison.
 
 ### Results
 
@@ -256,6 +302,12 @@ Actual     Existing Attrited
 Accuracy: 91.45 %
 Dummy classifier accuracy: 83.93 %
 ----------------------------------------
+AUC: 93.54 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 36.32 %
+FNR: 3.24 %
+----------------------------------------
 AIC: 4438.858 
 BIC: 4561.648 
 ----------------------------------------
@@ -266,21 +318,33 @@ The results obtained using a 10-fold cross validation are the following:
 
 ```terminal
 ----------------------------------------
-Average accuracy: 91.35 +/- 0.81 %
+Average accuracy: 91.34 +/- 1.14 %
 ----------------------------------------
-Average AIC: 3996.611 +/- 31.81453 
-Average BIC: 4117.61 +/- 31.81517 
+Average AUC: 93.48 +/- 0.72 %
+----------------------------------------
+Average FPR: 3.23 +/- 0.73 %
+Average FNR: 45.27 +/- 7.74 %
+----------------------------------------
+Average AIC: 3996.685 +/- 32.0919 
+Average BIC: 4117.684 +/- 32.09195 
 ----------------------------------------
 ```
 
-### Summary 
+### Summary
 
-| Metric | Value | Standard Deviation | Assesment Technique |
+| Metric | Value | Standard Deviation | Assessment Technique |
 |:---:|:---:|:---:|:---:|
 | Accuracy | 91.45 % | - | Whole dataset |
+| AUC | 93.54 % | - | Whole dataset |
 | Dummy accuracy | 83.93 % | - | Whole dataset |
+| Dummy AUC | 50 % | - | Whole dataset |
+| FPR | 36.32 % | - | Whole dataset |
+| FNR | 3.24 % | - | Whole dataset |
 | AIC | 4438.858 | - | Whole dataset |
 | BIC | 4561.648 | - | Whole dataset |
-| Accuracy | 91.35 % | 0.81 % | 10-fold CV |
-| AIC | 3996.611 | 31.81453 | 10-fold CV |
-| BIC | 4117.61 | 31.81517 | 10-fold CV |
+| Accuracy | 91.34 % | 1.14 % | 10-fold CV |
+| AUC | 93.48 % | 0.72 % | 10-fold CV |
+| FPR | 3.23 % | 0.73 % | 10-fold CV |
+| FNR | 45.27 % | 7.74 % | 10-fold CV |
+| AIC | 3996.685 | 32.0919 | 10-fold CV |
+| BIC | 4117.684 | 32.09195 | 10-fold CV |
