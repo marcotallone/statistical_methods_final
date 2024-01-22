@@ -25,6 +25,8 @@
 * [x] Feature selection and variables importance
 * [x] Logistic Regression
 * [x] K-fold CV
+* [ ] Precision
+* [ ] Recall
 * [ ] Make better exploratory analysis plots
 * [ ] Prepare presentation slides
 
@@ -118,7 +120,7 @@ bank <- read.csv("path/to/datasets/BankChurners.csv", sep = ",")
 ## Preprocessing
 
 >[!NOTE]
-> The preprocessing steps can be found in the `r_scripts/preprocessing.R` file.
+> The preprocessing steps can be found in the `r_scripts/preprocessing.r` file.
 
 As suggested from the Kaggel description of the dataset, we removed the last two columns.
 
@@ -156,3 +158,129 @@ bank$Card_Category <- as.factor(bank$Card_Category)
 ```
 
 Luckily there were no missing values in the dataset, so we could proceed with the analysis.
+
+## Logistic regression
+
+>[!NOTE]
+> The logistic regression can be found in the `r_scripts/logistic_regression.r` file.
+
+### Feature Engineering
+
+A model using logistic regression has been built to predict the `Attrition_Flag` response variable.\
+In an initial phase the most relevant variables have been selected to build the model.\
+The selection criteria used have been the following:
+
+* Variables with a p-value lower than 0.05 in the `glm()` model summary have been selected
+* Variables with low correlation with the response variable have been removed
+* Using the `anova()` test, only the most significant variables (including categorical variables) have been selected
+* To avoid multicollinearity, variables with low VIF have been selected
+
+The final model has been built using the following variables:
+
+* `Gender`: the gender of the customer
+* `Marital_Status`: the marital status of the customer
+* `Income_Category`: the income category of the customer
+* `Total_Relationship_Count`: the total number of products held by the customer
+* `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
+* `Contacts_Count_12_mon`: the number of contacts in the last 12 months
+* `Total_Revolving_Bal`: the total revolving balance on the credit card
+* `Total_Trans_Amt`: the total transaction amount in the last 12 months
+* `Total_Trans_Ct`: the total transaction count in the last 12 months
+* `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
+
+### Model assessment
+
+In the relative `R` script, appropiate learning and prediction functions have been defined as well as methods to compute effectveness metrics on the whole dataset and performing a k-fold cross validation.\
+The effectiveness metrics used so far are the following:
+
+* Accuracy
+<!-- * Precision
+* Recall -->
+* Confusion matrix (*only in the whole dataset case*)
+* AIC
+* BIC
+
+### Results
+
+The model fitted on the whole dataset is the following:
+
+```terminal
+Call:
+glm(formula = Attrition_Flag ~ ., family = binomial(link = "logit"), 
+    data = data)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-3.0843  -0.3420  -0.1450  -0.0473   3.6999  
+
+Coefficients:
+                              Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                   -2.12638    0.25019  -8.499  < 2e-16 ***
+GenderM                       -0.86146    0.14754  -5.839 5.26e-09 ***
+Marital_StatusMarried         -0.45238    0.16146  -2.802 0.005081 ** 
+Marital_StatusSingle           0.01729    0.16248   0.106 0.915259    
+Marital_StatusUnknown         -0.04065    0.20624  -0.197 0.843768    
+Income_Category$40K - $60K    -0.72166    0.18969  -3.804 0.000142 ***
+Income_Category$60K - $80K    -0.46179    0.17566  -2.629 0.008566 ** 
+Income_Category$80K - $120K   -0.25768    0.16980  -1.518 0.129127    
+Income_CategoryLess than $40K -0.63249    0.20376  -3.104 0.001909 ** 
+Income_CategoryUnknown        -0.79028    0.23044  -3.430 0.000605 ***
+Total_Relationship_Count      -0.76106    0.04315 -17.638  < 2e-16 ***
+Months_Inactive_12_mon         0.49064    0.03946  12.435  < 2e-16 ***
+Contacts_Count_12_mon          0.54786    0.04157  13.179  < 2e-16 ***
+Total_Revolving_Bal           -0.74870    0.03858 -19.405  < 2e-16 ***
+Total_Trans_Amt                2.62421    0.10454  25.103  < 2e-16 ***
+Total_Trans_Ct                -4.17099    0.12845 -32.472  < 2e-16 ***
+Total_Ct_Chng_Q4_Q1           -0.79465    0.04534 -17.527  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 8927.2  on 10126  degrees of freedom
+Residual deviance: 4404.9  on 10110  degrees of freedom
+AIC: 4438.9
+
+Number of Fisher Scoring iterations: 7
+```
+
+The results obtained on the same training dataset are the following:
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     8225      275
+  Attrited      591     1036
+----------------------------------------
+Accuracy: 91.45 %
+Dummy classifier accuracy: 83.93 %
+----------------------------------------
+AIC: 4438.858 
+BIC: 4561.648 
+----------------------------------------
+```
+
+Note that the accuracy of the Dummy classifier should be taken into account due to the relatively high imbalance of the dataset.
+The results obtained using a 10-fold cross validation are the following:
+
+```terminal
+----------------------------------------
+Average accuracy: 91.35 +/- 0.81 %
+----------------------------------------
+Average AIC: 3996.611 +/- 31.81453 
+Average BIC: 4117.61 +/- 31.81517 
+----------------------------------------
+```
+
+### Summary 
+
+| Metric | Value | Standard Deviation | Assesment Technique |
+|:---:|:---:|:---:|:---:|
+| Accuracy | 91.45 % | - | Whole dataset |
+| Dummy accuracy | 83.93 % | - | Whole dataset |
+| AIC | 4438.858 | - | Whole dataset |
+| BIC | 4561.648 | - | Whole dataset |
+| Accuracy | 91.35 % | 0.81 % | 10-fold CV |
+| AIC | 3996.611 | 31.81453 | 10-fold CV |
+| BIC | 4117.61 | 31.81517 | 10-fold CV |

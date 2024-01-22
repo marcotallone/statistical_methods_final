@@ -117,7 +117,7 @@ cv <- function(data, k = 10) {
   cat("----------------------------------------\n")
 }
 
-# PRE-PROCESSING AND FEATURE EN\GINEERING --------------------------------------
+# PRE-PROCESSING AND FEATURE ENGINEERING ---------------------------------------
 
 # Set working directory as this directory
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
