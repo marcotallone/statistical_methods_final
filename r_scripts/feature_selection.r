@@ -38,6 +38,9 @@ for (i in 1:length(colnames(bank_num))) {
 
 bank_filtered <- bank_num[, -c(2, 3, 4, 8, 10, 11, 15)]
 
+# Add a log(bank$Total_Trans_Amt) column to the bank dataset
+bank$log_Total_Trans_Amt <- log(bank$Total_Trans_Amt)
+
 bank_logistic <- glm(Attrition_Flag ~
                        + bank$Gender
                        + bank$Marital_Status
@@ -46,7 +49,7 @@ bank_logistic <- glm(Attrition_Flag ~
                        + bank$Months_Inactive_12_mon
                        + bank$Contacts_Count_12_mon
                        + bank$Total_Revolving_Bal
-                       + log(bank$Total_Trans_Amt)
+                       + bank$log_Total_Trans_Amt
                        + bank$Total_Trans_Ct
                        + bank$Total_Ct_Chng_Q4_Q1,
                      data = bank_filtered,
@@ -70,6 +73,12 @@ accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 # Dummy clasifier accuracy
 dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
 
+# AIC
+aic <- AIC(model)
+
+# BIC
+bic <- BIC(model)
+
 # RESULTS ---------------------------------------------------------------------
 
 # Model summary
@@ -82,55 +91,61 @@ confusion_matrix
 accuracy
 dummy_classifier_accuracy
 
+# AIC
+aic
+
+# BIC
+bic
+
 # Anova test
 anova(model, test = "Chisq")
 
 # VIF test
 vif(model)
 
-# STANDARDIZATION OF THE USED VARIABLES ----------------------------------------
+# # STANDARDIZATION OF THE USED VARIABLES ----------------------------------------
 
-# Standardize the numerical variables
-bank_filtered_standardized <- bank_filtered
+# # Standardize the numerical variables
+# bank_filtered_standardized <- bank_filtered
 
-# Standardize the numerical variables except for the Attrition_Flag
-bank_filtered_standardized[, -1] <- scale(bank_filtered_standardized[, -1])
+# # Standardize the numerical variables except for the Attrition_Flag
+# bank_filtered_standardized[, -1] <- scale(bank_filtered_standardized[, -1])
 
-# Logistic regression
-bank_logistic_standardized <- glm(Attrition_Flag ~ .
-                                  + bank$Gender
-                                  + bank$Marital_Status
-                                  + bank$Income_Category,
-                                  data = bank_filtered_standardized,
-                                  family = binomial(link = "logit"))
+# # Logistic regression
+# bank_logistic_standardized <- glm(Attrition_Flag ~ .
+#                                   + bank$Gender
+#                                   + bank$Marital_Status
+#                                   + bank$Income_Category,
+#                                   data = bank_filtered_standardized,
+#                                   family = binomial(link = "logit"))
 
-# Confusion matrix
-predicted <- predict(bank_logistic_standardized, type = "response") > 0.5
-actual <- data$Attrition_Flag
-confusion_matrix <- table(Actual = actual, Predicted = predicted)
-colnames(confusion_matrix) <- c("Existing Customer", "Attrited Customer")
-rownames(confusion_matrix) <- c("Existing Customer", "Attrited Customer")
+# # Confusion matrix
+# predicted <- predict(bank_logistic_standardized, type = "response") > 0.5
+# actual <- data$Attrition_Flag
+# confusion_matrix <- table(Actual = actual, Predicted = predicted)
+# colnames(confusion_matrix) <- c("Existing Customer", "Attrited Customer")
+# rownames(confusion_matrix) <- c("Existing Customer", "Attrited Customer")
 
-# Accuracy from confusion matrix
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+# # Accuracy from confusion matrix
+# accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 
-# Dummy clasifier accuracy
-dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
+# # Dummy clasifier accuracy
+# dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
 
-# RESULTS ---------------------------------------------------------------------
+# # RESULTS ---------------------------------------------------------------------
 
-# Model summary
-summary(bank_logistic_standardized)
+# # Model summary
+# summary(bank_logistic_standardized)
 
-# Confusion matrix
-confusion_matrix
+# # Confusion matrix
+# confusion_matrix
 
-# Accuracy
-accuracy
-dummy_classifier_accuracy
+# # Accuracy
+# accuracy
+# dummy_classifier_accuracy
 
-# Anova test
-anova(bank_logistic_standardized, test = "Chisq")
+# # Anova test
+# anova(bank_logistic_standardized, test = "Chisq")
 
-# VIF test
-vif(bank_logistic_standardized)
+# # VIF test
+# vif(bank_logistic_standardized)

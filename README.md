@@ -22,9 +22,11 @@
 * [x] Add Contributors
 * [x] Preprocessing script
 * [x] Exploratory Analysis
-* [ ] Ranking variables importance
-* [ ] Logistic Regression
-* [ ] ...
+* [x] Feature selection and variables importance
+* [x] Logistic Regression
+* [x] K-fold CV
+* [ ] Make better exploratory analysis plots
+* [ ] Prepare presentation slides
 
 ## Project Structure
 
