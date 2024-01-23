@@ -3,11 +3,8 @@
 library(ggplot2)
 library(ggExtra)
 library(ggforce)
-library(gridExtra)
 library(patchwork)
 library(RColorBrewer)
-
-display.brewer.all()
 
 # LOADING AND PREPROCESSING ----------------------------------------------------
 
@@ -36,56 +33,14 @@ bank$Card_Category <- as.factor(bank$Card_Category)
 bank_num <- bank[, sapply(bank, is.numeric)]
 bank_cat <- bank[, sapply(bank, is.factor)]
 
+summary(bank)
+
 # PLOTS ------------------------------------------------------------------------
 
-# Re-do the plot above but coloring each bar by the Attrition_Flag variable
-p1 <- ggplot(bank, aes(x = Customer_Age, fill = as.factor(Attrition_Flag))) +
-  geom_histogram(binwidth = 1, color = "#FFFFFF") +
-  labs(title = "Histogram of Customer Age", x = "Age", y = "Count") +
-  scale_fill_manual(values = c("royalblue", "#FF5733"),
-                    name = "Attrition Flag:",
-                    labels = c("Existing", "Attrited")) +
-  theme(legend.position = c(.85, .85),
-        legend.background = element_rect(fill = "transparent"),
-        legend.title = element_text(size = 10),
-        aspect.ratio = 1)
-
-# Violin/jitter plot
-p2 <- ggplot(bank, aes(x = as.factor(Attrition_Flag), y = Customer_Age,
-                       color = as.factor(Attrition_Flag))) +
-  labs(x = "Attrition Flag", y = "Age") +
-  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
-  geom_violin(fill = "gray80", linewidth = 1, alpha = .5) +
-  geom_sina(aes(group = Attrition_Flag), alpha = .25) +
-  coord_flip() +
-  theme(legend.position = "none", aspect.ratio = 1)
-
-# Boxplot
-p3 <- ggplot(bank, aes(x = as.factor(Attrition_Flag), y = Customer_Age,
-                       color = as.factor(Attrition_Flag))) +
-  labs(x = "Attrition Flag", y = "Age") +
-  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
-  geom_boxplot(fill = "gray80", alpha = .5,
-               outlier.size = 4, outlier.alpha = .75) +
-  coord_flip() +
-  theme(legend.position = "none", aspect.ratio = 1)
-
-# Cumulative distribution plot without separating by Attrition_Flag
-p4 <- ggplot(bank, aes(x = Customer_Age)) +
-  stat_ecdf(geom = "step", color = "royalblue") +
-  labs(title = "Cumulative Distribution of Customer Age",
-       x = "Customer Age", y = "Cumulative Distribution") +
-  theme(legend.position = "none", aspect.ratio = 1)
-
-# Arrange the plots in a 2x2 grid
-(p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
-
-# Function to convenitntly reproduce the previous plot with other variables
-
-plot <- function(dataset, variable, title, xlab, ylab) {
+plot_continuous <- function(dataset, variable, title, xlab, bins_width = 1) {
   p1 <- ggplot(dataset, aes(x = {{ variable }},
                             fill = as.factor(Attrition_Flag))) +
-    geom_histogram(binwidth = 1, color = "#FFFFFF") +
+    geom_histogram(binwidth = bins_width, color = "#FFFFFF") +
     labs(title = paste("Histogram of", title), x = xlab, y = "Count") +
     scale_fill_manual(values = c("royalblue", "#FF5733"),
                       name = "Attrition Flag:",
@@ -97,7 +52,7 @@ plot <- function(dataset, variable, title, xlab, ylab) {
 
   p2 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
                             color = as.factor(Attrition_Flag))) +
-    labs(x = "Attrition Flag", y = ylab) +
+    labs(x = "Attrition Flag", y = xlab) +
     scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
     geom_violin(fill = "gray80", linewidth = 1, alpha = .5) +
     geom_sina(aes(group = Attrition_Flag), alpha = .25) +
@@ -106,7 +61,7 @@ plot <- function(dataset, variable, title, xlab, ylab) {
 
   p3 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
                             color = as.factor(Attrition_Flag))) +
-    labs(x = "Attrition Flag", y = ylab) +
+    labs(x = "Attrition Flag", y = xlab) +
     scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
     geom_boxplot(fill = "gray80", alpha = .5,
                  outlier.size = 4, outlier.alpha = .75) +
@@ -122,5 +77,58 @@ plot <- function(dataset, variable, title, xlab, ylab) {
   (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
 }
 
-# Test the function with age again
-plot(bank, Customer_Age, "Customer Age", "Age", "Age")
+plot_discrete <- function(dataset, variable, title, xlab) {
+  p1 <- ggplot(dataset, aes(x = as.factor({{ variable }}),
+                            fill = as.factor(Attrition_Flag))) +
+    geom_bar(color = "#FFFFFF") +
+    labs(title = paste("Barplot of", title), x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = c(.85, .85),
+          legend.background = element_rect(fill = "transparent"),
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  p2 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_violin(fill = "gray80", linewidth = 1, alpha = .5) +
+    geom_sina(aes(group = Attrition_Flag), alpha = .25) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p3 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_boxplot(fill = "gray80", alpha = .5,
+                 outlier.size = 4, outlier.alpha = .75) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p4 <- ggplot(dataset, aes(x = {{ variable }})) +
+    stat_ecdf(geom = "step", color = "royalblue") +
+    labs(title = paste("Cumulative Distribution of", title),
+         x = xlab, y = "Cumulative Distribution") +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
+}
+
+# Plot continuous and discrete variables
+plot_continuous(bank, Customer_Age, "Customer Age", "Age")
+plot_discrete(bank, Dependent_count, "Number of Dependents", "Dependents")
+plot_discrete(bank, Months_on_book, "Months on Book", "Months")
+plot_discrete(bank, Total_Relationship_Count, "Total Relationship Count", "Count")
+plot_discrete(bank, Months_Inactive_12_mon, "Months Inactive (12 months)", "Months")
+plot_discrete(bank, Contacts_Count_12_mon, "Contacts Count (12 months)", "Count")
+plot_continuous(bank, Credit_Limit, "Credit Limit", "Credit Limit", 1000)
+plot_continuous(bank, Total_Revolving_Bal, "Total Revolving Balance", "Balance", 100)
+plot_continuous(bank, Avg_Open_To_Buy, "Average Open to Buy", "Balance", 1000)
+plot_continuous(bank, Total_Amt_Chng_Q4_Q1, "Total Amount Change (Q4-Q1)", "Amount Change", 0.25)
+plot_continuous(bank, Total_Trans_Amt, "Total Transaction Amount", "Amount", 1000)
+plot_discrete(bank, Total_Trans_Ct, "Total Transaction Count", "Count")
+plot_continuous(bank, Total_Ct_Chng_Q4_Q1, "Total Count Change (Q4-Q1)", "Count Change", 0.25)
+plot_continuous(bank, Avg_Utilization_Ratio, "Average Utilization Ratio", "Ratio", 0.1)
