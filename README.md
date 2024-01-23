@@ -37,6 +37,8 @@ The project's structure is the following.
 .
 ├── datasets # Folder with datasets
 │   └── BankChurners.csv
+├── plots # Folder with saved R plots
+│   └── plot.png
 ├── GroupB_Final.Rmd # Final R Markdown
 ├── README.md # This file
 └── r_scripts # R scripts

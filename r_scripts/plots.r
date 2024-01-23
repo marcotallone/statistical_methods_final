@@ -78,6 +78,9 @@ plot_continuous <- function(dataset, variable, title, xlab, bins_width = 1) {
     theme(legend.position = "none", aspect.ratio = 1)
 
   (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
+
+  # Save the plot in the plots/ folder
+  ggsave(paste("../plots/", title, ".png", sep = ""), width = 10, height = 10)
 }
 
 plot_discrete <- function(dataset, variable, title, xlab) {
@@ -118,6 +121,9 @@ plot_discrete <- function(dataset, variable, title, xlab) {
     theme(legend.position = "none", aspect.ratio = 1)
 
   (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
+
+  # Save the plot in the plots/ folder
+  ggsave(paste("../plots/", title, ".png", sep = ""), width = 10, height = 10)
 }
 
 plot_categorical <- function(dataset, variable, xlab) {
@@ -155,6 +161,9 @@ plot_categorical <- function(dataset, variable, xlab) {
           aspect.ratio = 1)
 
   (pie / box) + plot_layout(ncol = 2)
+
+  # Save the plot in the plots/ folder
+  ggsave(paste("../plots/", xlab, ".png", sep = ""), width = 10, height = 10)
 }
 
 # Plot variables
@@ -222,6 +231,9 @@ ggplot(corm, aes(rowname, fct_rev(colname),
         legend.position = c(.85, .8),
         axis.text.x = element_text(angle = 50, vjust = 1, hjust = 1))
 
+# Save the plot in the plots/ folder
+ggsave("../plots/correlation_matrix.png", width = 10, height = 10)
+
 # Plots from correlation analysis
 
 # Plot of Total_Trans_Ct vs Total_Trans_Amt
@@ -236,11 +248,17 @@ ggplot(bank, aes(x = Total_Trans_Amt, y = Total_Trans_Ct, color = as.factor(Attr
         legend.title = element_text(size = 10),
         aspect.ratio = 1)
 
+# Save the plot in the plots/ folder
+ggsave("../plots/total_trans_ct_vs_total_trans_amt.png", width = 10, height = 10)
+
 # Density hexagonal map of counts of the previous plot
 ggplot(bank, aes(x = Total_Trans_Amt, y = Total_Trans_Ct)) +
   geom_hex() +
   scale_fill_distiller(palette = "YlOrRd", direction = 1) +
   labs(x = "Total Transaction Amount", y = "Total Transaction Count")
+
+# Save the plot in the plots/ folder
+ggsave("../plots/total_trans_ct_vs_total_trans_amt_hex.png", width = 10, height = 10)
 
 # Plot of Avg_Open_To_Buy vs Credit_Limit
 ggplot(bank, aes(x = Credit_Limit, y = Avg_Open_To_Buy, color = as.factor(Attrition_Flag))) +
@@ -253,3 +271,6 @@ ggplot(bank, aes(x = Credit_Limit, y = Avg_Open_To_Buy, color = as.factor(Attrit
         legend.background = element_rect(fill = "transparent"),
         legend.title = element_text(size = 10),
         aspect.ratio = 1)
+
+# Save the plot in the plots/ folder
+ggsave("../plots/credit_limit_vs_open_to_buy.png", width = 10, height = 10)
