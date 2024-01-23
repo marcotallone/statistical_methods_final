@@ -181,8 +181,6 @@ plot_continuous(bank, Avg_Utilization_Ratio, "Average Utilization Ratio", "Ratio
 # Correlation matrix
 
 # Compute the correlation matrix
-
-# Compute the correlation matrix
 corm <- bank_num |>
   corrr::correlate() |>
   corrr::shave(upper = FALSE)
