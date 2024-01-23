@@ -6,6 +6,8 @@ library(ggforce)
 library(patchwork)
 library(RColorBrewer)
 library(dplyr)
+library(corrr)
+library(forcats)
 
 # LOADING AND PREPROCESSING ----------------------------------------------------
 
@@ -157,7 +159,12 @@ plot_categorical <- function(dataset, variable, xlab) {
 
 # Plot variables
 plot_continuous(bank, Customer_Age, "Customer Age", "Age")
+plot_categorical(bank, Gender, "Gender")
 plot_discrete(bank, Dependent_count, "Number of Dependents", "Dependents")
+plot_categorical(bank, Education_Level, "Education Level")
+plot_categorical(bank, Marital_Status, "Marital Status")
+plot_categorical(bank, Income_Category, "Income Category")
+plot_categorical(bank, Card_Category, "Card Category")
 plot_discrete(bank, Months_on_book, "Months on Book", "Months")
 plot_discrete(bank, Total_Relationship_Count, "Total Relationship Count", "Count")
 plot_discrete(bank, Months_Inactive_12_mon, "Months Inactive (12 months)", "Months")
@@ -171,81 +178,80 @@ plot_discrete(bank, Total_Trans_Ct, "Total Transaction Count", "Count")
 plot_continuous(bank, Total_Ct_Chng_Q4_Q1, "Total Count Change (Q4-Q1)", "Count Change", 0.25)
 plot_continuous(bank, Avg_Utilization_Ratio, "Average Utilization Ratio", "Ratio", 0.1)
 
-# Blueprints -------------------------------------------------------------------
+# Correlation matrix
 
-# Barplot of gender
+# Compute the correlation matrix
 
-# p1 <- ggplot(bank, aes(x = as.factor(Gender),
-#                        fill = as.factor(Attrition_Flag))) +
-#   geom_bar(color = "#FFFFFF") +
-#   labs(x = "Gender", y = "Count") +
-#   scale_fill_manual(values = c("royalblue", "#FF5733"),
-#                     name = "Attrition Flag:",
-#                     labels = c("Existing", "Attrited")) +
-#   theme(legend.position = "top",
-#         legend.background = element_rect(fill = "transparent"),
-#         legend.direction = "horizontal",
-#         legend.title = element_text(size = 10),
-#         aspect.ratio = 1)
+# Compute the correlation matrix
+corm <- bank_num |>
+  corrr::correlate() |>
+  corrr::shave(upper = FALSE)
 
-# # Compute the position of labels
-# bank_prop <- bank %>%
-#   count(Gender) %>%
-#   mutate(prop = n / sum(n) * 100,
-#          ypos = cumsum(prop) - 0.5 * prop)
 
-# # Create the pie chart
-# p2 <- ggplot(bank_prop, aes(x = "", y = prop, fill = Gender)) +
-#   geom_bar(stat = "identity", width = 1, color = "white") +
-#   coord_polar("y", start = 0) +
-#   theme_void() +
-#   theme(legend.position = "top",
-#     legend.background = element_rect(fill = "transparent"),
-#     legend.direction = "horizontal", aspect.ratio = 1) +
-#   geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
-#     color = "white", size = 10) +
-#   scale_fill_brewer(palette = "Set2",
-#         name = "Gender:",
-#         labels = c("Male", "Female"))
+# Pivot the matrix and fix the labels
+corm <- corm |>
+  tidyr::pivot_longer(
+    cols = -term,
+    names_to = "colname",
+    values_to = "corr"
+  ) |>
+  dplyr::mutate(
+    rowname = forcats::fct_inorder(term),
+    colname = forcats::fct_inorder(colname),
+    label = dplyr::if_else(is.na(corr), "", sprintf("%1.2f", corr))
+  )
 
-#   (p2 / p1) + plot_layout(ncol = 2)
+# Plot the correlation matrix
+ggplot(corm, aes(rowname, fct_rev(colname),
+                 fill = corr)) +
+  geom_tile() +
+  geom_text(aes(
+    label = label,
+    color = abs(corr) < .75
+  )) +
+  coord_fixed(expand = FALSE) +
+  scale_color_manual(
+    values = c("white", "black"),
+    guide = "none"
+  ) +
+  scale_fill_distiller(
+    palette = "RdYlBu", na.value = "white",
+    direction = -1, limits = c(-1, 1),
+    name = "Pearson\nCorrelation:"
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme(panel.border = element_rect(color = NA, fill = NA),
+        legend.position = c(.85, .8),
+        axis.text.x = element_text(angle = 50, vjust = 1, hjust = 1))
 
-plot_categorical <- function(dataset, variable, xlab) {
+# Plots from correlation analysis
 
-  # Compute the position of labels
-  class_prop <- dataset %>%
-    count({{variable}}) %>%
-    mutate(prop = n / sum(n) * 100,
-           ypos = cumsum(prop) - 0.5 * prop)
+# Plot of Total_Trans_Ct vs Total_Trans_Amt
+ggplot(bank, aes(x = Total_Trans_Amt, y = Total_Trans_Ct, color = as.factor(Attrition_Flag))) +
+  geom_point(alpha = .5) +
+  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733"),
+                     name = "Attrition Flag:",
+                     labels = c("Existing", "Attrited")) +
+  labs(x = "Total Transaction Amount", y = "Total Transaction Count") +
+  theme(legend.position = c(.85, .15),
+        legend.background = element_rect(fill = "transparent"),
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1)
 
-  # Create the pie chart
-  pie <- ggplot(class_prop, aes(x = "", y = prop, fill = {{variable}})) +
-    geom_bar(stat = "identity", width = 1, color = "white") +
-    coord_polar("y", start = 0) +
-    theme_void() +
-    theme(legend.position = "top",
-          legend.background = element_rect(fill = "transparent"),
-          legend.direction = "horizontal", aspect.ratio = 1) +
-    # geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
-    #           color = "white", size = 6) +
-    scale_fill_brewer(palette = "Set2",
-                      name = xlab)
+# Density hexagonal map of counts of the previous plot
+ggplot(bank, aes(x = Total_Trans_Amt, y = Total_Trans_Ct)) +
+  geom_hex() +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1) +
+  labs(x = "Total Transaction Amount", y = "Total Transaction Count")
 
-  box <- ggplot(dataset, aes(x = as.factor({{variable}}),
-                             fill = as.factor(Attrition_Flag))) +
-    geom_bar(color = "#FFFFFF") +
-    labs(x = xlab, y = "Count") +
-    scale_fill_manual(values = c("royalblue", "#FF5733"),
-                      name = "Attrition Flag:",
-                      labels = c("Existing", "Attrited")) +
-    theme(legend.position = "top",
-          legend.background = element_rect(fill = "transparent"),
-          legend.direction = "horizontal",
-          legend.title = element_text(size = 10),
-          aspect.ratio = 1)
-
-  (pie / box) + plot_layout(ncol = 2)
-}
-
-plot_categorical(bank, Gender, "Gender")
-plot_categorical(bank, Education_Level, "Education Level")
+# Plot of Avg_Open_To_Buy vs Credit_Limit
+ggplot(bank, aes(x = Credit_Limit, y = Avg_Open_To_Buy, color = as.factor(Attrition_Flag))) +
+  geom_point(alpha = .5) +
+  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733"),
+                     name = "Attrition Flag:",
+                     labels = c("Existing", "Attrited")) +
+  labs(x = "Credit Limit", y = "Average Open to Buy") +
+  theme(legend.position = c(.85, .15),
+        legend.background = element_rect(fill = "transparent"),
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1)
