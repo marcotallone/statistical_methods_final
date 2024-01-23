@@ -5,6 +5,7 @@ library(ggExtra)
 library(ggforce)
 library(patchwork)
 library(RColorBrewer)
+library(dplyr)
 
 # LOADING AND PREPROCESSING ----------------------------------------------------
 
@@ -117,7 +118,44 @@ plot_discrete <- function(dataset, variable, title, xlab) {
   (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
 }
 
-# Plot continuous and discrete variables
+plot_categorical <- function(dataset, variable, xlab) {
+
+  # Compute the position of labels
+  class_prop <- dataset %>%
+    count({{variable}}) %>%
+    mutate(prop = n / sum(n) * 100,
+           ypos = cumsum(prop) - 0.5 * prop)
+
+  # Create the pie chart
+  pie <- ggplot(class_prop, aes(x = "", y = prop, fill = {{variable}})) +
+    geom_bar(stat = "identity", width = 1, color = "white") +
+    coord_polar("y", start = 0) +
+    theme_void() +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal", aspect.ratio = 1) +
+    # geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
+    #           color = "white", size = 6) +
+    scale_fill_brewer(palette = "Set2",
+                      name = xlab)
+
+  box <- ggplot(dataset, aes(x = as.factor({{variable}}),
+                             fill = as.factor(Attrition_Flag))) +
+    geom_bar(color = "#FFFFFF") +
+    labs(x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal",
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  (pie / box) + plot_layout(ncol = 2)
+}
+
+# Plot variables
 plot_continuous(bank, Customer_Age, "Customer Age", "Age")
 plot_discrete(bank, Dependent_count, "Number of Dependents", "Dependents")
 plot_discrete(bank, Months_on_book, "Months on Book", "Months")
@@ -132,3 +170,82 @@ plot_continuous(bank, Total_Trans_Amt, "Total Transaction Amount", "Amount", 100
 plot_discrete(bank, Total_Trans_Ct, "Total Transaction Count", "Count")
 plot_continuous(bank, Total_Ct_Chng_Q4_Q1, "Total Count Change (Q4-Q1)", "Count Change", 0.25)
 plot_continuous(bank, Avg_Utilization_Ratio, "Average Utilization Ratio", "Ratio", 0.1)
+
+# Blueprints -------------------------------------------------------------------
+
+# Barplot of gender
+
+# p1 <- ggplot(bank, aes(x = as.factor(Gender),
+#                        fill = as.factor(Attrition_Flag))) +
+#   geom_bar(color = "#FFFFFF") +
+#   labs(x = "Gender", y = "Count") +
+#   scale_fill_manual(values = c("royalblue", "#FF5733"),
+#                     name = "Attrition Flag:",
+#                     labels = c("Existing", "Attrited")) +
+#   theme(legend.position = "top",
+#         legend.background = element_rect(fill = "transparent"),
+#         legend.direction = "horizontal",
+#         legend.title = element_text(size = 10),
+#         aspect.ratio = 1)
+
+# # Compute the position of labels
+# bank_prop <- bank %>%
+#   count(Gender) %>%
+#   mutate(prop = n / sum(n) * 100,
+#          ypos = cumsum(prop) - 0.5 * prop)
+
+# # Create the pie chart
+# p2 <- ggplot(bank_prop, aes(x = "", y = prop, fill = Gender)) +
+#   geom_bar(stat = "identity", width = 1, color = "white") +
+#   coord_polar("y", start = 0) +
+#   theme_void() +
+#   theme(legend.position = "top",
+#     legend.background = element_rect(fill = "transparent"),
+#     legend.direction = "horizontal", aspect.ratio = 1) +
+#   geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
+#     color = "white", size = 10) +
+#   scale_fill_brewer(palette = "Set2",
+#         name = "Gender:",
+#         labels = c("Male", "Female"))
+
+#   (p2 / p1) + plot_layout(ncol = 2)
+
+plot_categorical <- function(dataset, variable, xlab) {
+
+  # Compute the position of labels
+  class_prop <- dataset %>%
+    count({{variable}}) %>%
+    mutate(prop = n / sum(n) * 100,
+           ypos = cumsum(prop) - 0.5 * prop)
+
+  # Create the pie chart
+  pie <- ggplot(class_prop, aes(x = "", y = prop, fill = {{variable}})) +
+    geom_bar(stat = "identity", width = 1, color = "white") +
+    coord_polar("y", start = 0) +
+    theme_void() +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal", aspect.ratio = 1) +
+    # geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
+    #           color = "white", size = 6) +
+    scale_fill_brewer(palette = "Set2",
+                      name = xlab)
+
+  box <- ggplot(dataset, aes(x = as.factor({{variable}}),
+                             fill = as.factor(Attrition_Flag))) +
+    geom_bar(color = "#FFFFFF") +
+    labs(x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal",
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  (pie / box) + plot_layout(ncol = 2)
+}
+
+plot_categorical(bank, Gender, "Gender")
+plot_categorical(bank, Education_Level, "Education Level")
