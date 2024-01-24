@@ -50,7 +50,8 @@ The project's structure is the following.
 
 Predicting the `Attrition Flag` response variable from the [Credit Card costumers dataset]( https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers ) available on Kaggle.\
 The dataset can be found in the `datasets/` folder.\
-Other projects based on this dataset [here](https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers/code).
+Other projects based on this dataset [here](https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers/code).\
+Interesting notebook to look at [here](https://www.kaggle.com/code/kaushikmajumder/credit-card-customer-churn-prediction).
 
 ## About the dataset
 
