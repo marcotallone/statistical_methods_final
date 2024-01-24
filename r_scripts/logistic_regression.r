@@ -44,10 +44,10 @@ assess <- function(model, data) {
   dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
 
   # False positive rate
-  fpr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
+  fpr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
 
   # False negative rate
-  fnr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
+  fnr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
 
   # ROC curve and AUC
   roc <- roc(actual, predict_second(model, data))

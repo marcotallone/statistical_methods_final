@@ -307,8 +307,8 @@ Dummy classifier accuracy: 83.93 %
 AUC: 93.54 %
 Dummy classifier AUC: 50 %
 ----------------------------------------
-FPR: 36.32 %
-FNR: 3.24 %
+FPR: 3.24 %
+FNR: 36.32 %
 ----------------------------------------
 AIC: 4438.858 
 BIC: 4561.648 
@@ -340,8 +340,8 @@ Average BIC: 4117.684 +/- 32.09195
 | AUC | 93.54 % | - | Whole dataset |
 | Dummy accuracy | 83.93 % | - | Whole dataset |
 | Dummy AUC | 50 % | - | Whole dataset |
-| FPR | 36.32 % | - | Whole dataset |
-| FNR | 3.24 % | - | Whole dataset |
+| FPR | 3.24 % | - | Whole dataset |
+| FNR | 36.32 % | - | Whole dataset |
 | AIC | 4438.858 | - | Whole dataset |
 | BIC | 4561.648 | - | Whole dataset |
 | Accuracy | 91.34 % | 1.14 % | 10-fold CV |
