@@ -7,7 +7,7 @@
 | Name | Surname | Master |
 |:---:|:---:|:---:|
 | Sara | - | DSAI |
-| Giulio | - | DSAI |
+| Giulio | Fantuzzi | DSAI |
 | Vishal | - | DSAI |
 | Marco | Tallone | SDIC |
 | Alessio | - | DSAI |
@@ -27,6 +27,8 @@
 * [x] K-fold CV
 * [ ] Check computation of AUC, fpr and fnr
 * [ ] Make better exploratory analysis plots
+* [ ] Apply ROSE and check how models improve (if they improve)
+* [ ] Check if by applying ROSE some decisions about regressors should be changed
 * [ ] Prepare presentation slides
 
 ## Project Structure
@@ -351,3 +353,70 @@ Average BIC: 4117.684 +/- 32.09195
 | FNR | 45.27 % | 7.74 % | 10-fold CV |
 | AIC | 3996.685 | 32.0919 | 10-fold CV |
 | BIC | 4117.684 | 32.09195 | 10-fold CV |
+
+
+## ROSE package to deal with class imbalance
+>[!NOTE]
+> The ROSE package has been tested in  `r_scripts/testing_ROSE.r` 
+
+There was an evident imbalance among the target variable's classes:
+```R
+>>table(bank$Attrition_Flag)
+  0    1 
+8500 1627 
+```
+- Attrited customers (1): 1627
+- Existing customers (0): 8500
+- Attrited customers proportion: 16.06596 %
+
+
+A new (synthetic) dataset was obtained by applying ROSE package, as follows:
+```R
+>>library(ROSE)
+>>bank_balanced<- ROSE(Attrition_Flag~.,data=bank,seed = 123)$data
+>>table(bank$Attrition_Flag)
+  0    1 
+5123 5004 
+```
+- Attrited customers (1): 5004
+- Existing customers (0): 5123
+- Attrited customers proportion: 49.41246 %
+
+### Results for Logistic regression
+
+Single-run result
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     4238      885
+  Attrited      875     4129
+----------------------------------------
+Accuracy: 82.62 %
+Dummy classifier accuracy: 50.59 %
+----------------------------------------
+AUC: 90.27 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 17.28 %
+FNR: 17.49 %
+----------------------------------------
+AIC: 8036.421 
+BIC: 8137.542 
+----------------------------------------
+```
+
+10 fold CV result:
+```terminal
+----------------------------------------
+Average accuracy: 82.56 +/- 1.58 %
+----------------------------------------
+Average AUC: 90.2 +/- 1.3 %
+----------------------------------------
+Average FPR: 17.3 +/- 1.82 %
+Average FNR: 17.63 +/- 1.85 %
+----------------------------------------
+Average AIC: 7234.224 +/- 48.81491 
+Average BIC: 7333.871 +/- 48.81446 
+----------------------------------------
+```
