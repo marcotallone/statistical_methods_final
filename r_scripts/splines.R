@@ -2,8 +2,10 @@ library(MASS)
 library(splines)
 library(pROC)
 library(mgcv)
-
-##PREPROCESSING (according to previous codes)---------------------------
+library(car)
+library(caret)
+library(forcats)
+##PREPROCESSING ---------------------------
 
 # Set working directory as this directory
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
@@ -24,13 +26,79 @@ bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
 
 # Convert all categorical variables to factors
 bank$Gender <- as.factor(bank$Gender)
+
+bank$Income_Category <- fct_collapse(bank$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
+# Chnanging the levels of Marital_Status in either married or not married
+bank$Marital_Status <- fct_collapse(bank$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+# Converting Months_Inactive_12_mon to a factor
+bank$Months_Inactive_12_mon <- as.factor(bank$Months_Inactive_12_mon)
+levels(bank$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
+
+# Joining together the levels after 4 months
+bank$Months_Inactive_12_mon <- fct_collapse(bank$Months_Inactive_12_mon,
+                                            "4+" = c("4", "5", "6+"))
+
 bank$Education_Level <- as.factor(bank$Education_Level)
 bank$Marital_Status <- as.factor(bank$Marital_Status)
 bank$Income_Category <- as.factor(bank$Income_Category)
 bank$Card_Category <- as.factor(bank$Card_Category)
 bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 
+
+#I will create 2 models: 
+#- gamfit which considers the dataset with all the available vars
+#- gamfit_less_vars which considers less variables, as if this operaion was performed
+#  bank <- bank[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)] I will not delete all these column. 
+
 #FUNCTIONS--------------------------------------------------
+
+# Learning function: f'_learn
+learn <- function(data) {
+  #spline with gam
+            model<-gam(Attrition_Flag ~ s(Customer_Age)+Gender
+                       +Dependent_count
+            +Education_Level+Marital_Status
+            +Income_Category+Card_Category+Months_on_book 
+            +Total_Relationship_Count+Months_Inactive_12_mon
+            +Contacts_Count_12_mon+Credit_Limit+s(Total_Revolving_Bal)
+            +Avg_Open_To_Buy+s(Total_Amt_Chng_Q4_Q1)
+            +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1)
+            +s(Avg_Utilization_Ratio), data=bank)
+            return(model)
+}
+
+# Learning function: f'_learn using the dataset as: bank <- bank[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
+learn_less_vars <- function(data) {
+  #spline with gam
+  model<-gam(Attrition_Flag ~ Gender
+             +Marital_Status
+             +Income_Category
+             +Total_Relationship_Count+Months_Inactive_12_mon
+             +Contacts_Count_12_mon+s(Total_Revolving_Bal)
+             +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1), data=bank)
+  return(model)
+}
+
+
+# Prediction function: f'_predict
+predict_prime <- function(model, data, tau = 0.5) {
+  # Predictions
+  predicted <- predict(model, newdata = data, type = "response") > tau
+  return(predicted)
+}
+
+
 predict_second <- function(model, data) {
   # Predicted probabilities
   predicted_probs <- predict(model, newdata = data, type = "response")
@@ -108,8 +176,90 @@ assess <- function(model, data) {
   return(results)
 }
 
-##MODELS---------------------------------------------------------------
 
+# k-fold cross validation function: f'_cv
+cv <- function(data, k = 10, flag) {
+  # Create k equally size folds
+  folds <- createFolds(data$Attrition_Flag, k = k)
+  
+  # Initialize vectors
+  accuracy <- rep(0, k)
+  auc <- rep(0, k)
+  fpr <- rep(0, k)
+  fnr <- rep(0, k)
+  aic <- rep(0, k)
+  bic <- rep(0, k)
+  
+  # For each fold
+  for (i in 1:k) {
+    # Split the data into training and testing sets
+    train <- data[-folds[[i]], ]
+    test <- data[folds[[i]], ]
+    
+    # Train the model on the training set
+    if (flag==TRUE){
+      model <- learn(train)
+      cat("model with all variables")}
+    if (flag==FALSE){
+      model<-learn_less_vars(train)
+      cat("model with less variables")}
+    
+    # Predict on the testing set
+    predicted <- predict_prime(model, test)
+    predicted_probs <- predict_second(model, test)
+    
+    # Positive, negatives and false cases
+    p <- sum(predicted == 1)
+    n <- sum(predicted == 0)
+    fp <- sum(predicted == 1 & test$Attrition_Flag == 0)
+    fn <- sum(predicted == 0 & test$Attrition_Flag == 1)
+    
+    # Compute the accuracy, Auc, FPR, FNR, AIC and BIC
+    accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
+    roc <- roc(test$Attrition_Flag, predicted_probs)
+    auc[i] <- auc(roc)
+    fpr[i] <- fp / n
+    fnr[i] <- fn / p
+    aic[i] <- AIC(model)
+    bic[i] <- BIC(model)
+  }
+  
+  # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
+  average_accuracy <- mean(accuracy)
+  average_auc <- mean(auc)
+  average_fpr <- mean(fpr)
+  average_fnr <- mean(fnr)
+  average_aic <- mean(aic)
+  average_bic <- mean(bic)
+  
+  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_auc <- sd(auc)
+  sd_fpr <- sd(fpr)
+  sd_fnr <- sd(fnr)
+  sd_aic <- sd(aic)
+  sd_bic <- sd(bic)
+  
+  # Print the average accuracy, AIC and BIC with their standard deviations
+  cat("----------------------------------------\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
+      round(sd_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
+      round(sd_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
+      round(sd_fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AIC:", average_aic, "+/-", sd_aic, "\n")
+  cat("Average BIC:", average_bic, "+/-", sd_bic, "\n")
+  cat("----------------------------------------\n")
+}
+
+##MODELS---------------------------------------------------------------
+#considering all the variables
 gamfit_first_try<-gam(Attrition_Flag ~ s(Customer_Age)+Gender+Dependent_count
             +Education_Level+Marital_Status
             +Income_Category+Card_Category+s(Months_on_book )
@@ -131,6 +281,14 @@ gamfit<-gam(Attrition_Flag ~ s(Customer_Age)+Gender+Dependent_count
             +s(Avg_Utilization_Ratio), data=bank)
 summary(gamfit)
 
+#considering less variables
+gamfit_less_vars<-gam(Attrition_Flag ~ Gender
+                      +Marital_Status
+                      +Income_Category
+                      +Total_Relationship_Count+Months_Inactive_12_mon
+                      +Contacts_Count_12_mon+s(Total_Revolving_Bal)
+                      +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1), data=bank)
+summary(gamfit_less_vars)
 ##ASSESSING--------------------------------------------------------
 
 
@@ -139,7 +297,11 @@ summary(gamfit)
 
 cat("Results on whole dataset:\n")
 results <- assess(gamfit, bank)
+results_less_vars  <-assess(gamfit_less_vars,bank)
 
+anova(gamfit, test = "Chisq")
+anova(gamfit_less_vars, test="Chisq")
+cat("Results on 10-fold cross validation:\n")
+cv(bank,flag =  TRUE)
+cv(bank, flag = FALSE)
 
-anova(bank_logistic, test = "Chisq")
-vif(bank_logistic)
