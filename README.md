@@ -10,7 +10,7 @@
 | Giulio | Fantuzzi | DSAI |
 | Vishal | - | DSAI |
 | Marco | Tallone | SDIC |
-| Alessio | - | DSAI |
+| Alessio | Valentinis | DSAI |
 
 ## TO-DO
 
@@ -568,3 +568,12 @@ Average BIC: 98.15811 +/- 0
 ----------------------------------------
 ```
 
+## Ensamble methods
+
+**NB: I noticed that in the preprocessing steps, we modified the Attrition_Flag variable making it binary, but we let it NUMERICAL (forcing models to do regression on it)! I don't know if it was intended, but either case it's worth a check. I already made a change in my file called `ensamble.R`**
+
+I first looked at AdaBoost method, first with a static train-test division of 80%- 20% and then with a 10-fold cross validation. I used the `adabag` package.
+
+### AdaBoost with static train-test division
+
+```terminal
