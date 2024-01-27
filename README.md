@@ -572,8 +572,39 @@ Average BIC: 98.15811 +/- 0
 
 **NB: I noticed that in the preprocessing steps, we modified the Attrition_Flag variable making it binary, but we let it NUMERICAL (forcing models to do regression on it)! I don't know if it was intended, but either case it's worth a check. I already made a change in my file called `ensamble.R`**
 
+>[!NOTE]
+> The model with ensamble can be found in the `r_scripts/ensambe.R` file.
+
 I first looked at AdaBoost method, first with a static train-test division of 80%- 20% and then with a 10-fold cross validation. I used the `adabag` package.
 
 ### AdaBoost with static train-test division
 
+Firstly I tried to use the whole dataset, but I noticed that the model was overfitting, so I decided to use a static division, and fitted the model with default parameters.
+
+### Assessment
+I made by hand all the assessments, as the models I implemented didn't come with all the parameters required in the functions into the `assessment_utils.R` script.
+
 ```terminal
+----------------------------------------
+               Observed Class
+Predicted Class FALSE TRUE
+          FALSE  1672   53
+          TRUE     28  272
+----------------------------------------
+Accuracy: 96 %
+Dummy classifier accuracy: 83.93 %
+----------------------------------------
+Variable Importance
+
+1            Total_Trans_Ct 35.7744400
+2           Total_Trans_Amt 25.4973884
+3       Total_Revolving_Bal 13.2328035
+4       Total_Ct_Chng_Q4_Q1 10.2215522
+5  Total_Relationship_Count  6.6708030
+6     Contacts_Count_12_mon  3.6657152
+7    Months_Inactive_12_mon  3.2428367
+8                    Gender  0.8580609
+9            Marital_Status  0.6315079
+10          Income_Category  0.2048922
+
+```

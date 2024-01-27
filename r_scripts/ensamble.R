@@ -48,7 +48,7 @@ library(caret)
 library(adabag)   # Boosting
 
 # FIRST TRY WITH BOOSTING
-# Splitting the dataset into the Training set and Test set
+# Static splitting the dataset into the Training set and Test set
 set.seed(1234)
 index <- createDataPartition(bank$Attrition_Flag , p =0.8, list = FALSE)
 
@@ -59,6 +59,7 @@ cat("Existing customers (maj class): ",table(train.bank$Attrition_Flag)[1])
 
 # Fitting AdaBoost to the Training set and keep track of variable importance
 bank.boost <- boosting(Attrition_Flag ~ ., data = train.bank, boos = TRUE)
+print(bank.boost)
 
 # Predicting the Test set results
 pred <- predict(bank.boost, newdata = test.bank)
@@ -79,6 +80,13 @@ variable_importance_df <- data.frame(Variable = names(sorted_variable_importance
 # Print the variable importance as a column
 print(variable_importance_df)
 
+# CV splitting the dataset into the Training set and Test set
+set.seed(1234)
+bank.boostcv <- boosting.cv(Attrition_Flag ~ ., data = bank, boos = TRUE,
+                             v=10)
+
+# Confusion matrix for the best iteration
+bank.boostcv$confusion
 
 #-------------------------------------------------------------------------------
 # SECOND TRY WITH RANDOM FOREST
@@ -98,3 +106,41 @@ varImpPlot(bank.rf, sort = TRUE, n.var = 10, main = "Variable Importance")
 # Plotting the tree
 plot(bank.rf, main = "Random Forest")
 legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
+
+#-------------------------------------------------------------------------------
+# Assessment
+# 1. What is the accuracy of the boosting model on the test set?
+accuracy <- (pred$confusion[1,1] + pred$confusion[2,2]) / sum(pred$confusion)
+
+# 2. AUC index
+# Predict class probabilities
+pred_prob <- predict(bank.boost, newdata = test.bank, type = "prob")
+pred_prob
+
+# Extract probabilities for the positive class
+pred_prob_positive <- pred_prob$prob[,2]
+
+# Create a binary vector indicating the true positive class
+true_class <- factor(ifelse(test.bank$Attrition_Flag == "Attrited Customer", 1, 0))
+
+# Load the pROC package
+library(pROC)
+
+# Compute AUC
+auc <- auc(roc(true_class, pred_prob_positive))
+print(paste("AUC:", auc))
+
+
+# Print of assessment indexes
+cat("----------------------------------------\n")
+print(pred$confusion)
+cat("----------------------------------------\n")
+cat("Accuracy:", round(accuracy * 100, 2), "%\n")
+cat("----------------------------------------\n")
+cat("AUC:", round(results$auc * 100, 2), "%\n")
+cat("Dummy classifier AUC:",
+    round(results$dummy_classifier_auc * 100, 2), "%\n")
+cat("----------------------------------------\n")
+cat("FPR:", round(results$fpr * 100, 2), "%\n")
+cat("FNR:", round(results$fnr * 100, 2), "%\n")
+cat("----------------------------------------\n")
