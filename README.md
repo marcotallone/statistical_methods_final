@@ -420,3 +420,151 @@ Average AIC: 7234.224 +/- 48.81491
 Average BIC: 7333.871 +/- 48.81446 
 ----------------------------------------
 ```
+
+## Splines
+I used the gam function available in MASS package.
+>[!NOTE]
+> The model with splines can be found in the `r_scripts/splines.r` file.
+
+### Feature Engineering
+Regarding preprocessing I used the codes available in preprocesing.R in logistic_regression.r and testing_ROSE.R. I decided not to delete at first columns  3, 5, 6, 9, 10, 14, 16, 17, 21, and I implemented 2 differents models to compare them and see if those wariables would be helpful in a gam approach.
+
+As we can see from the summary of gamfit_first_try:
+```terminal
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+Attrition_Flag ~ s(Customer_Age) + Gender + Dependent_count + 
+    Education_Level + Marital_Status + Income_Category + Card_Category + 
+    s(Months_on_book) + Total_Relationship_Count + Months_Inactive_12_mon + 
+    Contacts_Count_12_mon + s(Credit_Limit) + s(Total_Revolving_Bal) + 
+    s(Avg_Open_To_Buy) + s(Total_Amt_Chng_Q4_Q1) + s(Total_Trans_Amt) + 
+    s(Total_Trans_Ct) + s(Total_Ct_Chng_Q4_Q1) + s(Avg_Utilization_Ratio)
+
+Parametric coefficients:
+                               Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                    0.368078   0.045587   8.074 7.57e-16 ***
+GenderM                       -0.031407   0.005340  -5.882 4.19e-09 ***
+Dependent_count                0.003172   0.002103   1.508  0.13158    
+Education_LevelDoctorate       0.018007   0.013043   1.381  0.16743    
+Education_LevelGraduate        0.001397   0.008311   0.168  0.86651    
+Education_LevelHigh School     0.004338   0.008855   0.490  0.62425    
+Education_LevelPost-Graduate   0.017628   0.012440   1.417  0.15652    
+Education_LevelUneducated      0.002446   0.009372   0.261  0.79410    
+Education_LevelUnknown         0.009723   0.009333   1.042  0.29752    
+Marital_StatusMarried         -0.034573   0.004725  -7.317 2.72e-13 ***
+Income_CategoryLess than 120K -0.016113   0.009762  -1.651  0.09885 .  
+Card_CategoryGold              0.041499   0.022734   1.825  0.06796 .  
+Card_CategoryPlatinum          0.049960   0.052124   0.958  0.33784    
+Card_CategorySilver            0.003453   0.011712   0.295  0.76815    
+Total_Relationship_Count      -0.020870   0.001654 -12.615  < 2e-16 ***
+Months_Inactive_12_mon1       -0.210735   0.043096  -4.890 1.02e-06 ***
+Months_Inactive_12_mon2       -0.160449   0.042975  -3.734  0.00019 ***
+Months_Inactive_12_mon3       -0.132801   0.042942  -3.093  0.00199 ** 
+Months_Inactive_12_mon4+      -0.118787   0.043574  -2.726  0.00642 ** 
+Contacts_Count_12_mon          0.025425   0.002132  11.924  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+                            edf Ref.df       F  p-value    
+s(Customer_Age)          8.8777 8.9915  29.833  < 2e-16 ***
+s(Months_on_book)        1.0000 1.0000   1.826   0.1766    
+s(Credit_Limit)          0.5021 0.5021  38.230 1.20e-05 ***
+s(Total_Revolving_Bal)   8.8682 8.9905  52.414  < 2e-16 ***
+s(Avg_Open_To_Buy)       1.3158 1.7523  12.087 2.81e-05 ***
+s(Total_Amt_Chng_Q4_Q1)  8.2570 8.8236  58.890  < 2e-16 ***
+s(Total_Trans_Amt)       8.9462 8.9990 407.685  < 2e-16 ***
+s(Total_Trans_Ct)        8.4391 8.8853 250.697  < 2e-16 ***
+s(Total_Ct_Chng_Q4_Q1)   7.7431 8.5535  40.753  < 2e-16 ***
+s(Avg_Utilization_Ratio) 3.9858 4.9592   2.883   0.0131 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Rank: 109/110
+R-sq.(adj) =  0.611   Deviance explained = 61.4%
+GCV = 0.05286  Scale est. = 0.052453  n = 10127
+```
+the edf of Months_on_book, Credit_Limit, Avg_Open_To_Buy are <2. So I decided to include in the gamfit model in an additive way without using splines.
+
+In the gamfit_less_vars I considered only the variables: Gender, Marital_Status, Income_Category,Total_Relationship_Count,Months_Inactive_12_month, Contacts_Count_12_mon; and as splines:Total_Revolving_Bal, Total_Trans_Amt, Total_Trans_Ct, Total_Ct_Chng_Q4_Q1.
+
+### Assessment
+For the assessment the code is almost the same as for Logistic regression. I slightly changed the code of cv in order to let it execute with different learn function, to compare the results of the 2 models.
+
+For gamfit:
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     8378      122
+  Attrited      371     1256
+----------------------------------------
+Accuracy: 95.13 %
+Dummy classifier accuracy: 83.93 %
+----------------------------------------
+AUC: 98.2 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.44 %
+FNR: 22.8 %
+----------------------------------------
+AIC: -1032.97 
+BIC: -473.1245 
+----------------------------------------
+```
+
+For gamfit_less_vars:
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     8331      169
+  Attrited      430     1197
+----------------------------------------
+Accuracy: 94.09 %
+Dummy classifier accuracy: 83.93 %
+----------------------------------------
+AUC: 97.52 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.99 %
+FNR: 26.43 %
+----------------------------------------
+AIC: -219.6766 
+BIC: 98.15811 
+----------------------------------------
+```
+
+For gamfit with 10 CV:
+```terminal
+----------------------------------------
+Average accuracy: 95.13 +/- 1.24 %
+----------------------------------------
+Average AUC: 98.22 +/- 0.55 %
+----------------------------------------
+Average FPR: 1.4 +/- 0.4 %
+Average FNR: 27.16 +/- 8.87 %
+----------------------------------------
+Average AIC: -1032.97 +/- 0 
+Average BIC: -473.1245 +/- 0 
+----------------------------------------
+```
+
+For gamfit_less_vars with 10 CV:
+```terminal
+----------------------------------------
+Average accuracy: 94.09 +/- 0.62 %
+----------------------------------------
+Average AUC: 97.53 +/- 0.4 %
+----------------------------------------
+Average FPR: 1.93 +/- 0.43 %
+Average FNR: 31.94 +/- 6.58 %
+----------------------------------------
+Average AIC: -219.6766 +/- 0 
+Average BIC: 98.15811 +/- 0 
+----------------------------------------
+```
+
