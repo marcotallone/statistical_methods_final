@@ -42,6 +42,331 @@ bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 #bank[, -c(1, 2, 3, 4)] <- scale(bank[, -c(1, 2, 3, 4)]) 
 
 #-------------------------------------------------------------------------------
+# Basic assessment functions
+# LIBRARIES --------------------------------------------------------------------
+library(car)
+library(caret)
+library(pROC)
+
+# FUNCTIONS --------------------------------------------------------------------
+
+# Learning function: f'_learn
+learn.boost <- function(data) {
+  # Logistic regression
+  model <- boosting(Attrition_Flag ~ .,
+               data = data,
+               boos=TRUE)
+  return(model)
+}
+
+# Prediction function: f'_predict
+predict_prime.boost <- function(model, data, tau = 0.5) {
+  # Predictions
+  predicted <- predict(model, newdata = data, type = "response")$prob[,2] > tau
+  return(predicted)
+}
+
+# Prediction function: f''_predict
+predict_second.boost <- function(model, data) {
+  # Predicted probabilities
+  predicted_probs <- predict(model, newdata = data, type = "response")$prob[,2]
+  return(predicted_probs)
+}
+
+# Function to assess the model later
+assess.boost <- function(model, data) {
+  # Confusion matrix
+  predicted <- predict(model, newdata = data, type = "response")$prob[,2] > 0.5
+  actual <- data$Attrition_Flag
+  confusion_matrix <- table(Actual = actual, Predicted = predicted)
+  colnames(confusion_matrix) <- c("Existing", "Attrited")
+  rownames(confusion_matrix) <- c("Existing", "Attrited")
+  
+  # Accuracy from confusion matrix
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  
+  # Dummy clasifier accuracy
+  dummy_classifier_accuracy <- sum(actual == FALSE) / length(actual)
+  
+  # False positive rate
+  fpr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
+  
+  # False negative rate
+  fnr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
+  
+  # ROC curve and AUC
+  roc <- roc(actual, predict_second.boost(model, data))
+  auc <- auc(roc)
+  
+  # Dummy classifier ROC curve and AUC
+  dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
+  dummy_classifier_auc <- auc(dummy_classifier_roc)
+  
+  # AIC
+  #aic <- AIC(model)
+  
+  # BIC
+  #bic <- BIC(model)
+  
+  # Results
+  results <- list(
+    confusion_matrix = confusion_matrix,
+    accuracy = accuracy,
+    dummy_classifier_accuracy = dummy_classifier_accuracy,
+    auc = auc,
+    dummy_classifier_auc = dummy_classifier_auc,
+    fpr = fpr,
+    fnr = fnr
+    #aic = aic,
+    #bic = bic
+  )
+  
+  # Print results
+  cat("----------------------------------------\n")
+  print(results$confusion_matrix)
+  cat("----------------------------------------\n")
+  cat("Accuracy:", round(results$accuracy * 100, 2), "%\n")
+  cat("Dummy classifier accuracy:",
+      round(results$dummy_classifier_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("AUC:", round(results$auc * 100, 2), "%\n")
+  cat("Dummy classifier AUC:",
+      round(results$dummy_classifier_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("FPR:", round(results$fpr * 100, 2), "%\n")
+  cat("FNR:", round(results$fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  #cat("AIC:", results$aic, "\n")
+  #cat("BIC:", results$bic, "\n")
+  #cat("----------------------------------------\n")
+  
+  return(results)
+}
+
+# k-fold cross validation function: f'_cv
+cv.boost <- function(data, k = 10) {
+  # Create k equally size folds
+  folds <- createFolds(data$Attrition_Flag, k = k)
+  
+  # Initialize vectors
+  accuracy <- rep(0, k)
+  auc <- rep(0, k)
+  fpr <- rep(0, k)
+  fnr <- rep(0, k)
+  #aic <- rep(0, k)
+  #bic <- rep(0, k)
+  
+  # For each fold
+  for (i in 1:k) {
+    # Split the data into training and testing sets
+    train <- data[-folds[[i]], ]
+    test <- data[folds[[i]], ]
+    
+    # Train the model on the training set
+    model <- learn(train)
+    
+    # Predict on the testing set
+    predicted <- predict_prime(model, test)
+    predicted_probs <- predict_second(model, test)
+    
+    # Positive, negatives and false cases
+    p <- sum(predicted == TRUE)
+    n <- sum(predicted == FALSE)
+    fp <- sum(predicted == TRUE & test$Attrition_Flag == FALSE)
+    fn <- sum(predicted == FALSE & test$Attrition_Flag == TRUE)
+    
+    # Compute the accuracy, Auc, FPR, FNR, AIC and BIC
+    accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
+    roc <- roc(test$Attrition_Flag, predicted_probs)
+    auc[i] <- auc(roc)
+    fpr[i] <- fp / n
+    fnr[i] <- fn / p
+    #aic[i] <- AIC(model)
+    #bic[i] <- BIC(model)
+  }
+  
+  # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
+  average_accuracy <- mean(accuracy)
+  average_auc <- mean(auc)
+  average_fpr <- mean(fpr)
+  average_fnr <- mean(fnr)
+  #average_aic <- mean(aic)
+  #average_bic <- mean(bic)
+  
+  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_auc <- sd(auc)
+  sd_fpr <- sd(fpr)
+  sd_fnr <- sd(fnr)
+  #sd_aic <- sd(aic)
+  #sd_bic <- sd(bic)
+  
+  # Print the average accuracy, AIC and BIC with their standard deviations
+  cat("----------------------------------------\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
+      round(sd_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
+      round(sd_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
+      round(sd_fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  #cat("Average AIC:", average_aic, "+/-", sd_aic, "\n")
+  #cat("Average BIC:", average_bic, "+/-", sd_bic, "\n")
+  #cat("----------------------------------------\n")
+}
+
+# Learning function: f'_learn
+learn <- function(data) {
+  # Logistic regression
+  model <- randomForest(Attrition_Flag ~ ., data = train.bank, ntree = 500,
+                        seed=123, importance = TRUE)
+  return(model)
+}
+
+# Prediction function: f'_predict
+predict_prime <- function(model, data, tau = 0.5) {
+  # Predictions
+  predicted <- predict(model, newdata = data, type = "prob")[, 2] > tau
+  return(predicted)
+}
+
+# Prediction function: f''_predict
+predict_second <- function(model, data) {
+  # Predicted probabilities
+  predicted_probs <- predict(model, newdata = data, type = "prob")[, 2]
+  return(predicted_probs)
+}
+
+assess <- function(model, data) {
+  # Confusion matrix
+  predicted <- predict(model, newdata = data, type = "response")
+  actual <- data$Attrition_Flag
+  confusion_matrix <- table(Actual = actual, Predicted = predicted)
+  colnames(confusion_matrix) <- c("Existing", "Attrited")
+  rownames(confusion_matrix) <- c("Existing", "Attrited")
+  
+  # Accuracy from confusion matrix
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  
+  # Dummy clasifier accuracy
+  dummy_classifier_accuracy <- sum(actual == FALSE) / length(actual)
+  
+  # False positive rate
+  fpr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
+  
+  # False negative rate
+  fnr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
+  
+  # ROC curve and AUC
+  roc <- roc(actual, predict_second(model, data))
+  auc <- auc(roc)
+  
+  # Dummy classifier ROC curve and AUC
+  dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
+  dummy_classifier_auc <- auc(dummy_classifier_roc)
+  
+  # Results
+  results <- list(
+    confusion_matrix = confusion_matrix,
+    accuracy = accuracy,
+    dummy_classifier_accuracy = dummy_classifier_accuracy,
+    auc = auc,
+    dummy_classifier_auc = dummy_classifier_auc,
+    fpr = fpr,
+    fnr = fnr
+  )
+  
+  # Print results
+  cat("----------------------------------------\n")
+  print(results$confusion_matrix)
+  cat("----------------------------------------\n")
+  cat("Accuracy:", round(results$accuracy * 100, 2), "%\n")
+  cat("Dummy classifier accuracy:",
+      round(results$dummy_classifier_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("AUC:", round(results$auc * 100, 2), "%\n")
+  cat("Dummy classifier AUC:",
+      round(results$dummy_classifier_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("FPR:", round(results$fpr * 100, 2), "%\n")
+  cat("FNR:", round(results$fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+
+  
+  return(results)
+}
+
+# k-fold cross validation function: f'_cv
+cv <- function(data, k = 10) {
+  # Create k equally size folds
+  folds <- createFolds(data$Attrition_Flag, k = k)
+  
+  # Initialize vectors
+  accuracy <- rep(0, k)
+  auc <- rep(0, k)
+  fpr <- rep(0, k)
+  fnr <- rep(0, k)
+  
+  # For each fold
+  for (i in 1:k) {
+    # Split the data into training and testing sets
+    train <- data[-folds[[i]], ]
+    test <- data[folds[[i]], ]
+    
+    # Train the model on the training set
+    model <- learn(train)
+    
+    # Predict on the testing set
+    predicted <- predict_prime(model, test)
+    predicted_probs <- predict_second(model, test)
+    
+    # Positive, negatives and false cases
+    p <- sum(predicted == TRUE)
+    n <- sum(predicted == FALSE)
+    fp <- sum(predicted == TRUE & test$Attrition_Flag == FALSE)
+    fn <- sum(predicted == FALSE & test$Attrition_Flag == TRUE)
+    
+    # Compute the accuracy, Auc, FPR, FNR, AIC and BIC
+    accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
+    roc <- roc(test$Attrition_Flag, predicted_probs)
+    auc[i] <- auc(roc)
+    fpr[i] <- fp / n
+    fnr[i] <- fn / p
+  }
+  
+  # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
+  average_accuracy <- mean(accuracy)
+  average_auc <- mean(auc)
+  average_fpr <- mean(fpr)
+  average_fnr <- mean(fnr)
+  
+  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_auc <- sd(auc)
+  sd_fpr <- sd(fpr)
+  sd_fnr <- sd(fnr)
+  
+  # Print the average accuracy, AIC and BIC with their standard deviations
+  cat("----------------------------------------\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
+      round(sd_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
+      round(sd_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
+      round(sd_fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+}
+
+
+#-------------------------------------------------------------------------------
 # IMPORT LIBRARIES
 library(randomForest)
 library(caret)
@@ -62,8 +387,9 @@ bank.boost <- boosting(Attrition_Flag ~ ., data = train.bank, boos = TRUE)
 print(bank.boost)
 
 # Predicting the Test set results
-pred <- predict(bank.boost, newdata = test.bank)
+pred <- predict(bank.boost, newdata = test.bank, type="response")
 pred$confusion
+pred$prob[,2] >0.5
 
 # Extract information about variable selection
 # Extract the variable selection information for each boosting iteration
@@ -94,7 +420,9 @@ bank.rf <- randomForest(Attrition_Flag ~ ., data = train.bank, ntree = 500,
                         seed=123, importance = TRUE)
 
 # Predicting the Test set results
-pred <- predict(bank.rf, newdata = test.bank)
+pred <- predict(bank.rf, newdata = test.bank, type="response")
+pred
+pred<- pred >0.5
 confusion_matrix<- table(pred, test.bank$Attrition_Flag)
 confusion_matrix
 
@@ -103,44 +431,19 @@ print(bank.rf)
 # Variable importance plot
 varImpPlot(bank.rf, sort = TRUE, n.var = 10, main = "Variable Importance")
 
+# Variable importance table
+importance(bank.rf, type = 2)
+
 # Plotting the tree
 plot(bank.rf, main = "Random Forest")
 legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
 
 #-------------------------------------------------------------------------------
-# Assessment
-# 1. What is the accuracy of the boosting model on the test set?
-accuracy <- (pred$confusion[1,1] + pred$confusion[2,2]) / sum(pred$confusion)
+# ASSESSMENT
+# AdaBoost
+boost.results <- assess.boost(bank.boost, test.bank)
+boost.resultscv <- cv.boost(bank, k = 10)
 
-# 2. AUC index
-# Predict class probabilities
-pred_prob <- predict(bank.boost, newdata = test.bank, type = "prob")
-pred_prob
-
-# Extract probabilities for the positive class
-pred_prob_positive <- pred_prob$prob[,2]
-
-# Create a binary vector indicating the true positive class
-true_class <- factor(ifelse(test.bank$Attrition_Flag == "Attrited Customer", 1, 0))
-
-# Load the pROC package
-library(pROC)
-
-# Compute AUC
-auc <- auc(roc(true_class, pred_prob_positive))
-print(paste("AUC:", auc))
-
-
-# Print of assessment indexes
-cat("----------------------------------------\n")
-print(pred$confusion)
-cat("----------------------------------------\n")
-cat("Accuracy:", round(accuracy * 100, 2), "%\n")
-cat("----------------------------------------\n")
-cat("AUC:", round(results$auc * 100, 2), "%\n")
-cat("Dummy classifier AUC:",
-    round(results$dummy_classifier_auc * 100, 2), "%\n")
-cat("----------------------------------------\n")
-cat("FPR:", round(results$fpr * 100, 2), "%\n")
-cat("FNR:", round(results$fnr * 100, 2), "%\n")
-cat("----------------------------------------\n")
+# Random Forest
+rf.results <- assess(bank.rf, test.bank)
+rf.resultscv <- cv(bank, k = 10)

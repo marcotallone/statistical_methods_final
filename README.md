@@ -586,13 +586,19 @@ I made by hand all the assessments, as the models I implemented didn't come with
 
 ```terminal
 ----------------------------------------
-               Observed Class
-Predicted Class FALSE TRUE
-          FALSE  1672   53
-          TRUE     28  272
+          Predicted
+Actual     Existing Attrited
+  Existing     1673       27
+  Attrited       55      270
 ----------------------------------------
-Accuracy: 96 %
-Dummy classifier accuracy: 83.93 %
+Accuracy: 95.95 %
+Dummy classifier accuracy: 83.95 %
+----------------------------------------
+AUC: 98.4 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.59 %
+FNR: 16.92 %
 ----------------------------------------
 Variable Importance
 
@@ -608,3 +614,69 @@ Variable Importance
 10          Income_Category  0.2048922
 
 ```
+
+### AdaBoost with 10-fold cross validation
+
+I used the same parameters as before, but I used a 10-fold cross validation.
+```terminal
+----------------------------------------
+Average accuracy: 99.12 +/- 0.34 %
+----------------------------------------
+Average AUC: 99.79 +/- 0.13 %
+----------------------------------------
+Average FPR: 0.28 +/- 0.22 %
+Average FNR: 4.13 +/- 2.02 %
+----------------------------------------
+```
+
+### Random Forest with static train-test division
+
+I used the `randomForest` package, and I fitted the model with default parameters.
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     1674       26
+  Attrited       64      261
+----------------------------------------
+Accuracy: 95.56 %
+Dummy classifier accuracy: 83.95 %
+----------------------------------------
+AUC: 98.23 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.53 %
+FNR: 19.69 %
+----------------------------------------
+MeanDecreaseGini
+
+Gender                          36.399385
+Marital_Status                  23.984274
+Income_Category                  8.000361
+Total_Relationship_Count       199.579677
+Months_Inactive_12_mon          86.706335
+Contacts_Count_12_mon           88.551997
+Total_Revolving_Bal            388.571934
+Total_Trans_Amt                509.487662
+Total_Trans_Ct                 501.081768
+Total_Ct_Chng_Q4_Q1            333.989542
+```
+
+### Random Forest with 10-fold cross validation
+
+I used the same parameters as before, but I used a 10-fold cross validation.
+
+```terminal
+----------------------------------------
+Average accuracy: 99.1 +/- 0.33 %
+----------------------------------------
+Average AUC: 99.8 +/- 0.12 %
+----------------------------------------
+Average FPR: 0.3 +/- 0.21 %
+Average FNR: 4.1 +/- 1.35 %
+----------------------------------------
+```
+
+**NB: my code is still really verbose and has much more computation than required, but it is just as a backup and validation to see if "manually-computed" coefficients were consistent with the ones given from the libraries.**
+**TODO: Average variable importance on cv**
