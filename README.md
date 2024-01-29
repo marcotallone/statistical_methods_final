@@ -577,12 +577,179 @@ Average BIC: 98.15811 +/- 0
 
 I first looked at AdaBoost method, first with a static train-test division of 80%- 20% and then with a 10-fold cross validation. I used the `adabag` package.
 
+### Analysis on the whole dataset
+
 ### AdaBoost with static train-test division
 
-Firstly I tried to use the whole dataset, but I noticed that the model was overfitting, so I decided to use a static division, and fitted the model with default parameters.
+Firstly I tried to use the whole dataset.
 
 ### Assessment
 I made by hand all the assessments, as the models I implemented didn't come with all the parameters required in the functions into the `assessment_utils.R` script.
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     1680       20
+  Attrited       48      277
+----------------------------------------
+Accuracy: 96.64 %
+Dummy classifier accuracy: 83.95 %
+----------------------------------------
+AUC: 98.98 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.18 %
+FNR: 14.77 %
+----------------------------------------
+Variable importance:
+                   Variable Mean_Gini_Decrease
+1           Total_Trans_Amt         21.2023085
+2            Total_Trans_Ct         16.0602470
+3      Total_Amt_Chng_Q4_Q1         12.6190669
+4       Total_Ct_Chng_Q4_Q1          6.3711922
+5       Total_Revolving_Bal          6.1183427
+6              Customer_Age          5.6225678
+7              Credit_Limit          5.0469853
+8  Total_Relationship_Count          5.0028304
+9           Avg_Open_To_Buy          3.7004296
+10          Education_Level          3.6121165
+11    Contacts_Count_12_mon          3.4454316
+12           Months_on_book          2.9867131
+13   Months_Inactive_12_mon          2.4091363
+14    Avg_Utilization_Ratio          2.1693641
+15           Marital_Status          1.2552304
+16          Dependent_count          1.2051558
+17                   Gender          0.7694100
+18            Card_Category          0.2062053
+19          Income_Category          0.1972667
+----------------------------------------
+```
+
+### AdaBoost with 10-fold cross validation
+
+I used the same parameters as before, but I used a 10-fold cross validation.
+```terminal
+----------------------------------------
+Average accuracy: 97.33 +/- 0.65 %
+----------------------------------------
+Average AUC: 99.39 +/- 0.29 %
+----------------------------------------
+Average FPR: 1.12 +/- 0.36 %
+Average FNR: 10.76 +/- 2.53 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease    Std_Dev
+1           Total_Trans_Amt         21.3956578 1.02211133
+2            Total_Trans_Ct         17.1991349 0.51198369
+3      Total_Amt_Chng_Q4_Q1         11.3672550 0.41708711
+4       Total_Revolving_Bal          7.2367961 0.25506424
+5       Total_Ct_Chng_Q4_Q1          6.2949893 0.49071970
+6              Customer_Age          5.1833259 0.35377941
+7  Total_Relationship_Count          4.7237441 0.24920299
+8              Credit_Limit          4.4433490 0.22454304
+9           Education_Level          3.9403137 0.18198034
+10          Avg_Open_To_Buy          3.7138876 0.21357719
+11           Months_on_book          3.4115906 0.15480877
+12    Contacts_Count_12_mon          3.1450846 0.20233821
+13   Months_Inactive_12_mon          2.7952042 0.29731693
+14    Avg_Utilization_Ratio          2.0598053 0.39425455
+15          Dependent_count          1.1766892 0.14792473
+16           Marital_Status          0.9806874 0.17593701
+17                   Gender          0.5731588 0.10085429
+18            Card_Category          0.2416357 0.11075239
+19          Income_Category          0.1176907 0.06116263
+----------------------------------------
+```
+
+### Random Forest with static train-test division
+
+I used the `randomForest` package, and I fitted the model with default parameters.
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     1680       20
+  Attrited       64      261
+----------------------------------------
+Accuracy: 95.85 %
+Dummy classifier accuracy: 83.95 %
+----------------------------------------
+AUC: 98.71 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 1.18 %
+FNR: 19.69 %
+----------------------------------------
+Variable importance:
+                   Variable Mean_Gini_Decrease
+16          Total_Trans_Amt         399.827927
+17           Total_Trans_Ct         384.831802
+13      Total_Revolving_Bal         264.123972
+18      Total_Ct_Chng_Q4_Q1         230.778923
+9  Total_Relationship_Count         142.053837
+15     Total_Amt_Chng_Q4_Q1         141.913448
+19    Avg_Utilization_Ratio         129.581664
+1              Customer_Age          73.329894
+12             Credit_Limit          71.973182
+14          Avg_Open_To_Buy          67.580828
+10   Months_Inactive_12_mon          59.108270
+11    Contacts_Count_12_mon          58.958746
+8            Months_on_book          52.208794
+4           Education_Level          43.188889
+3           Dependent_count          27.821580
+2                    Gender          19.235724
+5            Marital_Status          11.682715
+7             Card_Category           5.858160
+6           Income_Category           3.350073
+----------------------------------------
+```
+
+### Random Forest with 10-fold cross validation
+
+I used the same parameters as before, but I used a 10-fold cross validation.
+
+```terminal
+----------------------------------------
+Average accuracy: 99.16 +/- 0.31 %
+----------------------------------------
+Average AUC: 99.9 +/- 0.07 %
+----------------------------------------
+Average FPR: 0.21 +/- 0.16 %
+Average FNR: 4.28 +/- 1.96 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease   Std_Dev
+1           Total_Trans_Amt         400.370327 0.7560910
+2            Total_Trans_Ct         377.983812 0.6455279
+3       Total_Revolving_Bal         251.801778 0.3734412
+4       Total_Ct_Chng_Q4_Q1         236.051413 0.6783163
+5     Avg_Utilization_Ratio         141.900558 0.2279646
+6  Total_Relationship_Count         140.834560 0.1284268
+7      Total_Amt_Chng_Q4_Q1         139.560874 0.1362001
+8              Customer_Age          73.525782 0.6375022
+9              Credit_Limit          72.771843 2.1550593
+10          Avg_Open_To_Buy          68.327976 0.7628449
+11    Contacts_Count_12_mon          59.880585 0.9598183
+12   Months_Inactive_12_mon          58.126678 0.8253341
+13           Months_on_book          52.115183 6.5760340
+14          Education_Level          44.475905 0.7811312
+15          Dependent_count          28.768839 1.6842069
+16                   Gender          18.410534 2.0749535
+17           Marital_Status          11.079980 4.9998442
+18            Card_Category           5.694400 4.8870951
+19          Income_Category           3.357699 6.5292501
+----------------------------------------
+```
+
+### Analysis on the reduced dataset
+
+I took away the variables non considered also in the other models, as variable importance may not be an indicative value of which variables are viable to be taken away.
+>[NOTE!]
+> Let me know if it may be sensible to remove the least important variables according to the ensemble methods, as they are different (I would take away the ones with mean gini decrease < 1(or 2) for boosting and <10(or 20) for randomforest)!!.
+
+### AdaBoost with static train-test division
 
 ```terminal
 ----------------------------------------
@@ -600,19 +767,19 @@ Dummy classifier AUC: 50 %
 FPR: 1.59 %
 FNR: 16.92 %
 ----------------------------------------
-Variable Importance
-
-1            Total_Trans_Ct 35.7744400
-2           Total_Trans_Amt 25.4973884
-3       Total_Revolving_Bal 13.2328035
-4       Total_Ct_Chng_Q4_Q1 10.2215522
-5  Total_Relationship_Count  6.6708030
-6     Contacts_Count_12_mon  3.6657152
-7    Months_Inactive_12_mon  3.2428367
-8                    Gender  0.8580609
-9            Marital_Status  0.6315079
-10          Income_Category  0.2048922
-
+Variable importance:
+                   Variable Mean_Gini_Decrease
+1            Total_Trans_Ct         32.1290080
+2           Total_Trans_Amt         28.0619350
+3       Total_Ct_Chng_Q4_Q1         11.6521977
+4       Total_Revolving_Bal         11.4968680
+5  Total_Relationship_Count          6.9770316
+6     Contacts_Count_12_mon          3.9556203
+7    Months_Inactive_12_mon          3.6111736
+8                    Gender          0.8720491
+9            Marital_Status          0.8677845
+10          Income_Category          0.3763321
+----------------------------------------
 ```
 
 ### AdaBoost with 10-fold cross validation
@@ -620,12 +787,25 @@ Variable Importance
 I used the same parameters as before, but I used a 10-fold cross validation.
 ```terminal
 ----------------------------------------
-Average accuracy: 99.12 +/- 0.34 %
+Average accuracy: 95.49 +/- 0.53 %
 ----------------------------------------
-Average AUC: 99.79 +/- 0.13 %
+Average AUC: 98.55 +/- 0.21 %
 ----------------------------------------
-Average FPR: 0.28 +/- 0.22 %
-Average FNR: 4.13 +/- 2.02 %
+Average FPR: 2.27 +/- 0.56 %
+Average FNR: 16.22 +/- 1.99 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease    Std_Dev
+1            Total_Trans_Ct         35.2607130 1.51321544
+2           Total_Trans_Amt         27.1277284 0.63385074
+3       Total_Revolving_Bal         12.3358661 0.66433659
+4       Total_Ct_Chng_Q4_Q1         10.2410856 0.60937211
+5  Total_Relationship_Count          6.8953816 0.57825762
+6     Contacts_Count_12_mon          3.6713650 0.40844293
+7    Months_Inactive_12_mon          2.7927028 0.31481083
+8                    Gender          0.8494183 0.12389372
+9            Marital_Status          0.6127634 0.18474584
+10          Income_Category          0.2129757 0.08584478
 ----------------------------------------
 ```
 
@@ -637,30 +817,31 @@ I used the `randomForest` package, and I fitted the model with default parameter
 ----------------------------------------
           Predicted
 Actual     Existing Attrited
-  Existing     1674       26
-  Attrited       64      261
+  Existing     1676       24
+  Attrited       65      260
 ----------------------------------------
-Accuracy: 95.56 %
+Accuracy: 95.6 %
 Dummy classifier accuracy: 83.95 %
 ----------------------------------------
-AUC: 98.23 %
+AUC: 98.14 %
 Dummy classifier AUC: 50 %
 ----------------------------------------
-FPR: 1.53 %
-FNR: 19.69 %
+FPR: 1.41 %
+FNR: 20 %
 ----------------------------------------
-MeanDecreaseGini
-
-Gender                          36.399385
-Marital_Status                  23.984274
-Income_Category                  8.000361
-Total_Relationship_Count       199.579677
-Months_Inactive_12_mon          86.706335
-Contacts_Count_12_mon           88.551997
-Total_Revolving_Bal            388.571934
-Total_Trans_Amt                509.487662
-Total_Trans_Ct                 501.081768
-Total_Ct_Chng_Q4_Q1            333.989542
+Variable importance:
+                   Variable Mean_Gini_Decrease
+8           Total_Trans_Amt         529.807126
+9            Total_Trans_Ct         485.608407
+7       Total_Revolving_Bal         393.019449
+10      Total_Ct_Chng_Q4_Q1         318.191270
+4  Total_Relationship_Count         205.084791
+6     Contacts_Count_12_mon          90.515870
+5    Months_Inactive_12_mon          85.966817
+1                    Gender          35.993873
+2            Marital_Status          23.708807
+3           Income_Category           8.235691
+----------------------------------------
 ```
 
 ### Random Forest with 10-fold cross validation
@@ -669,14 +850,27 @@ I used the same parameters as before, but I used a 10-fold cross validation.
 
 ```terminal
 ----------------------------------------
-Average accuracy: 99.1 +/- 0.33 %
+Average accuracy: 99.14 +/- 0.32 %
 ----------------------------------------
-Average AUC: 99.8 +/- 0.12 %
+Average AUC: 99.79 +/- 0.11 %
 ----------------------------------------
-Average FPR: 0.3 +/- 0.21 %
-Average FNR: 4.1 +/- 1.35 %
+Average FPR: 0.29 +/- 0.14 %
+Average FNR: 3.93 +/- 1.96 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease   Std_Dev
+1           Total_Trans_Amt         517.792419 0.5958843
+2            Total_Trans_Ct         486.881318 0.2789695
+3       Total_Revolving_Bal         393.766226 0.2129571
+4       Total_Ct_Chng_Q4_Q1         329.641423 1.8840771
+5  Total_Relationship_Count         201.542137 0.9021276
+6     Contacts_Count_12_mon          89.244495 0.8485140
+7    Months_Inactive_12_mon          85.594244 4.4140412
+8                    Gender          35.987968 5.0163658
+9            Marital_Status          24.198076 5.2970795
+10          Income_Category           8.085316 5.1896773
 ----------------------------------------
 ```
 
 **NB: my code is still really verbose and has much more computation than required, but it is just as a backup and validation to see if "manually-computed" coefficients were consistent with the ones given from the libraries.**
-**TODO: Average variable importance on cv**
+**TODO: Fix Dummy AUC (50% doesn't seem right)**

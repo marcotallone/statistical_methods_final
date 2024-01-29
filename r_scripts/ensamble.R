@@ -115,7 +115,7 @@ assess.boost <- function(model, data) {
   
   # Convert variable importance to a data frame
   variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
-                                       Importance = sorted_variable_importance,
+                                       Mean_Gini_Decrease = sorted_variable_importance,
                                        row.names = NULL)
   
   # AIC
@@ -208,10 +208,10 @@ cv.boost <- function(data, k = 10) {
   }
   
   # Compute average evaluation metrics
-  avg_accuracy <- mean(accuracy)
-  avg_auc <- mean(auc)
-  avg_fpr <- mean(fpr)
-  avg_fnr <- mean(fnr)
+  average_accuracy <- mean(accuracy)
+  average_auc <- mean(auc)
+  average_fpr <- mean(fpr)
+  average_fnr <- mean(fnr)
   
   # Compute average variable importance
   # Convert the list to a matrix to compute the average mean decrease
@@ -226,16 +226,28 @@ cv.boost <- function(data, k = 10) {
   
   # Convert variable importance to a data frame
   variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
-                                       Importance = sorted_variable_importance,
+                                       Mean_Gini_Decrease = sorted_variable_importance,
                                        Std_Dev = sd_mean_decrease,
                                        row.names = NULL)
   
+  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_auc <- sd(auc)
+  sd_fpr <- sd(fpr)
+  sd_fnr <- sd(fnr)
+  
   # Print average evaluation metrics and variable importance
   cat("----------------------------------------\n")
-  cat("Average accuracy:", round(avg_accuracy * 100, 2), "%\n")
-  cat("Average AUC:", round(avg_auc * 100, 2), "%\n")
-  cat("Average FPR:", round(avg_fpr * 100, 2), "%\n")
-  cat("Average FNR:", round(avg_fnr * 100, 2), "%\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
+      round(sd_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
+      round(sd_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
+      round(sd_fnr * 100, 2), "%\n")
   cat("----------------------------------------\n")
   cat("Average variable importance ranking:\n")
   print(variable_importance_df)
@@ -299,12 +311,12 @@ assess <- function(model, data) {
   # Create a data frame for variable names and importance values
   variable_importance_df <- data.frame(
     Variable = row.names(variable_importance),
-    Importance = as.numeric(variable_importance),
+    Mean_Gini_Decrease = as.numeric(variable_importance),
     row.names = NULL
   )
   
   # Sort the data frame by Importance in descending order
-  variable_importance_df <- variable_importance_df[order(-variable_importance_df$Importance), ]
+  variable_importance_df <- variable_importance_df[order(-variable_importance_df$Mean_Gini_Decrease), ]
   
   # Results
   results <- list(
@@ -351,6 +363,7 @@ cv <- function(data, k = 10) {
   auc <- rep(0, k)
   fpr <- rep(0, k)
   fnr <- rep(0, k)
+  mean_decrease_list <- vector("list", k)
   
   # For each fold
   for (i in 1:k) {
@@ -377,6 +390,7 @@ cv <- function(data, k = 10) {
     auc[i] <- auc(roc)
     fpr[i] <- fp / n
     fnr[i] <- fn / p
+    mean_decrease_list[[i]] <- importance(model, type = 2)
   }
   
   # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
@@ -384,6 +398,22 @@ cv <- function(data, k = 10) {
   average_auc <- mean(auc)
   average_fpr <- mean(fpr)
   average_fnr <- mean(fnr)
+  
+  # Compute average variable importance
+  # Convert the list to a matrix to compute the average mean decrease
+  mean_decrease_matrix <- do.call(cbind, mean_decrease_list)
+  
+  # Compute the average mean decrease across all iterations
+  average_mean_decrease <- rowMeans(mean_decrease_matrix)
+  sd_mean_decrease <- apply(mean_decrease_matrix, 1, sd)
+  
+  sorted_variable_importance <- sort(average_mean_decrease, decreasing = TRUE)
+  
+  # Convert variable importance to a data frame
+  variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
+                                       Mean_Gini_Decrease = sorted_variable_importance,
+                                       Std_Dev = sd_mean_decrease,
+                                       row.names = NULL)
   
   # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
   sd_accuracy <- sd(accuracy)
@@ -404,6 +434,9 @@ cv <- function(data, k = 10) {
   cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
       round(sd_fnr * 100, 2), "%\n")
   cat("----------------------------------------\n")
+  cat("Average variable importance ranking:\n")
+  print(variable_importance_df)
+  cat("----------------------------------------\n")
 }
 
 
@@ -422,79 +455,80 @@ index <- createDataPartition(bank$Attrition_Flag , p =0.8, list = FALSE)
 
 train.bank <- bank[index,]
 test.bank <- bank[-index,]
-cat("Attrited customers (rare class): ",table(train.bank$Attrition_Flag)[2])
-cat("Existing customers (maj class): ",table(train.bank$Attrition_Flag)[1])
+#cat("Attrited customers (rare class): ",table(train.bank$Attrition_Flag)[2])
+#cat("Existing customers (maj class): ",table(train.bank$Attrition_Flag)[1])
 
 # Fitting AdaBoost to the Training set and keep track of variable importance
 bank.boost <- boosting(Attrition_Flag ~ ., data = train.bank, boos = TRUE)
-print(bank.boost)
+# print(bank.boost)
 
 # Predicting the Test set results
-pred <- predict(bank.boost, newdata = test.bank, type="response")
-pred$confusion
-pred$prob[,2] >0.5
+# pred <- predict(bank.boost, newdata = test.bank, type="response")
+# pred$confusion
+# pred$prob[,2] >0.5
 
 # Extract information about variable selection
 # Extract the variable selection information for each boosting iteration
-var_selection <- bank.boost$importance
-
-# Sort the variable importance in descending order
-sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
-
-# Convert variable importance to a data frame
-variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
-                                     Importance = sorted_variable_importance,
-                                     row.names = NULL)
-
-# Print the variable importance as a column
-print(variable_importance_df)
-
-# CV splitting the dataset into the Training set and Test set
-set.seed(1234)
-bank.boostcv <- boosting.cv(Attrition_Flag ~ ., data = bank, boos = TRUE,
-                             v=10)
-
-# Confusion matrix for the best iteration
-bank.boostcv$confusion
+# var_selection <- bank.boost$importance
+# var_selection
+# 
+# # Sort the variable importance in descending order
+# sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
+# 
+# # Convert variable importance to a data frame
+# variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
+#                                      Importance = sorted_variable_importance,
+#                                      row.names = NULL)
+# 
+# # Print the variable importance as a column
+# print(variable_importance_df)
+# 
+# # CV splitting the dataset into the Training set and Test set
+# set.seed(1234)
+# bank.boostcv <- boosting.cv(Attrition_Flag ~ ., data = bank, boos = TRUE,
+#                              v=10)
+# 
+# # Confusion matrix for the best iteration
+# bank.boostcv$confusion
 
 #-------------------------------------------------------------------------------
 # SECOND TRY WITH RANDOM FOREST
 bank.rf <- randomForest(Attrition_Flag ~ ., data = train.bank, ntree = 500,
                         seed=123, importance = TRUE)
 
-# Predicting the Test set results
-pred <- predict(bank.rf, newdata = test.bank, type="response")
-pred
-pred<- pred >0.5
-confusion_matrix<- table(pred, test.bank$Attrition_Flag)
-confusion_matrix
-
-print(bank.rf)
+# # Predicting the Test set results
+# pred <- predict(bank.rf, newdata = test.bank, type="response")
+# pred
+# pred<- pred >0.5
+# confusion_matrix<- table(pred, test.bank$Attrition_Flag)
+# confusion_matrix
+# 
+# print(bank.rf)
 
 # Variable importance plot
-varImpPlot(bank.rf, sort = TRUE, n.var = 10, main = "Variable Importance")
+varImpPlot(bank.rf, sort = TRUE, main = "Variable Importance")
 
 # Variable importance table
 # Extract variable importance
-variable_importance <- importance(bank.rf, type = 2)
-
-# Create a data frame for variable names and importance values
-variable_importance_df <- data.frame(
-  Variable = row.names(variable_importance),
-  Importance = as.numeric(variable_importance),
-  row.names = NULL
-)
-
-# Sort the data frame by Importance in descending order
-variable_importance_df <- variable_importance_df[order(-variable_importance_df$Importance), ]
-
-# Print the variable importance as a data frame
-print(variable_importance_df)
+# variable_importance <- importance(bank.rf, type = 2)
+# 
+# # Create a data frame for variable names and importance values
+# variable_importance_df <- data.frame(
+#   Variable = row.names(variable_importance),
+#   Importance = as.numeric(variable_importance),
+#   row.names = NULL
+# )
+# 
+# # Sort the data frame by Importance in descending order
+# variable_importance_df <- variable_importance_df[order(-variable_importance_df$Importance), ]
+# 
+# # Print the variable importance as a data frame
+# print(variable_importance_df)
 
 
 # Plotting the tree
-plot(bank.rf, main = "Random Forest")
-legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
+# plot(bank.rf, main = "Random Forest")
+# legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
 
 #-------------------------------------------------------------------------------
 # ASSESSMENT
@@ -509,7 +543,6 @@ rf.resultscv <- cv(bank, k = 10)
 
 #-------------------------------------------------------------------------------
 # Results with reduced dataset
-bank
 bank <- bank[, -c(2, 4, 5, 8, 9, 13, 15, 16, 20)]
 cat("Results on reduced dataset:\n")
 
@@ -520,40 +553,40 @@ index <- createDataPartition(bank$Attrition_Flag , p =0.8, list = FALSE)
 
 train.bank <- bank[index,]
 test.bank <- bank[-index,]
-cat("Attrited customers (rare class): ",table(train.bank$Attrition_Flag)[2])
-cat("Existing customers (maj class): ",table(train.bank$Attrition_Flag)[1])
+# cat("Attrited customers (rare class): ",table(train.bank$Attrition_Flag)[2])
+# cat("Existing customers (maj class): ",table(train.bank$Attrition_Flag)[1])
 
 # Fitting AdaBoost to the Training set and keep track of variable importance
 bank.boost <- boosting(Attrition_Flag ~ ., data = train.bank, boos = TRUE)
-print(bank.boost)
-
-# Predicting the Test set results
-pred <- predict(bank.boost, newdata = test.bank, type="response")
-pred$confusion
-pred$prob[,2] >0.5
-
-# Extract information about variable selection
-# Extract the variable selection information for each boosting iteration
-var_selection <- bank.boost$importance
-
-# Sort the variable importance in descending order
-sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
-
-# Convert variable importance to a data frame
-variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
-                                     Importance = sorted_variable_importance,
-                                     row.names = NULL)
-
-# Print the variable importance as a column
-print(variable_importance_df)
-
-# CV splitting the dataset into the Training set and Test set
-set.seed(1234)
-bank.boostcv <- boosting.cv(Attrition_Flag ~ ., data = bank, boos = TRUE,
-                            v=10)
-
-# Confusion matrix for the best iteration
-bank.boostcv$confusion
+# print(bank.boost)
+# 
+# # Predicting the Test set results
+# pred <- predict(bank.boost, newdata = test.bank, type="response")
+# pred$confusion
+# pred$prob[,2] >0.5
+# 
+# # Extract information about variable selection
+# # Extract the variable selection information for each boosting iteration
+# var_selection <- bank.boost$importance
+# 
+# # Sort the variable importance in descending order
+# sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
+# 
+# # Convert variable importance to a data frame
+# variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
+#                                      Importance = sorted_variable_importance,
+#                                      row.names = NULL)
+# 
+# # Print the variable importance as a column
+# print(variable_importance_df)
+# 
+# # CV splitting the dataset into the Training set and Test set
+# set.seed(1234)
+# bank.boostcv <- boosting.cv(Attrition_Flag ~ ., data = bank, boos = TRUE,
+#                             v=10)
+# 
+# # Confusion matrix for the best iteration
+# bank.boostcv$confusion
 
 #-------------------------------------------------------------------------------
 # SECOND TRY WITH RANDOM FOREST
@@ -561,38 +594,38 @@ bank.rf <- randomForest(Attrition_Flag ~ ., data = train.bank, ntree = 500,
                         seed=123, importance = TRUE)
 
 # Predicting the Test set results
-pred <- predict(bank.rf, newdata = test.bank, type="response")
-pred
-pred<- pred >0.5
-confusion_matrix<- table(pred, test.bank$Attrition_Flag)
-confusion_matrix
-
-print(bank.rf)
+# pred <- predict(bank.rf, newdata = test.bank, type="response")
+# pred
+# pred<- pred >0.5
+# confusion_matrix<- table(pred, test.bank$Attrition_Flag)
+# confusion_matrix
+# 
+# print(bank.rf)
 
 # Variable importance plot
-varImpPlot(bank.rf, sort = TRUE, n.var = 10, main = "Variable Importance")
+varImpPlot(bank.rf, sort = TRUE, main = "Variable Importance")
 
 # Variable importance table
 # Extract variable importance
-variable_importance <- importance(bank.rf, type = 2)
-
-# Create a data frame for variable names and importance values
-variable_importance_df <- data.frame(
-  Variable = row.names(variable_importance),
-  Importance = as.numeric(variable_importance),
-  row.names = NULL
-)
-
-# Sort the data frame by Importance in descending order
-variable_importance_df <- variable_importance_df[order(-variable_importance_df$Importance), ]
-
-# Print the variable importance as a data frame
-print(variable_importance_df)
+# variable_importance <- importance(bank.rf, type = 2)
+# 
+# # Create a data frame for variable names and importance values
+# variable_importance_df <- data.frame(
+#   Variable = row.names(variable_importance),
+#   Importance = as.numeric(variable_importance),
+#   row.names = NULL
+# )
+# 
+# # Sort the data frame by Importance in descending order
+# variable_importance_df <- variable_importance_df[order(-variable_importance_df$Importance), ]
+# 
+# # Print the variable importance as a data frame
+# print(variable_importance_df)
 
 
 # Plotting the tree
-plot(bank.rf, main = "Random Forest")
-legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
+# plot(bank.rf, main = "Random Forest")
+# legend("topright", colnames(bank.rf$err.rate), col = 1:3, fill = 1:3)
 
 #-------------------------------------------------------------------------------
 # ASSESSMENT
@@ -657,12 +690,15 @@ average_fnr <- mean(fnr)
 
 # Compute average variable importance
 # Convert the list to a matrix to compute the average mean decrease
-mean_decrease_matrix <- do.call(rbind, mean_decrease_list)
+mean_decrease_list
+mean_decrease_matrix <- do.call(cbind, mean_decrease_list)
+mean_decrease_matrix
 
 # Compute the average mean decrease across all iterations
-average_mean_decrease <- colMeans(mean_decrease_matrix)
-sd_mean_decrease <- apply(mean_decrease_matrix, 2, sd)
-
+average_mean_decrease <- rowMeans(mean_decrease_matrix)
+average_mean_decrease
+sd_mean_decrease <- apply(mean_decrease_matrix, 1, sd)
+sd_mean_decrease
 
 sorted_variable_importance <- sort(average_mean_decrease, decreasing = TRUE)
 
@@ -671,6 +707,7 @@ variable_importance_df <- data.frame(Variable = names(sorted_variable_importance
                                      Importance = sorted_variable_importance,
                                      Std_Dev = sd_mean_decrease,
                                      row.names = NULL)
+variable_importance_df
 
 # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
 sd_accuracy <- sd(accuracy)
