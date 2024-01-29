@@ -107,6 +107,17 @@ assess.boost <- function(model, data) {
   dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
   dummy_classifier_auc <- auc(dummy_classifier_roc)
   
+  # Extract the variable selection information for each boosting iteration
+  var_selection <- model$importance
+  
+  # Sort the variable importance in descending order
+  sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
+  
+  # Convert variable importance to a data frame
+  variable_importance_df <- data.frame(Variable = names(sorted_variable_importance),
+                                       Importance = sorted_variable_importance,
+                                       row.names = NULL)
+  
   # AIC
   #aic <- AIC(model)
   
@@ -121,7 +132,8 @@ assess.boost <- function(model, data) {
     auc = auc,
     dummy_classifier_auc = dummy_classifier_auc,
     fpr = fpr,
-    fnr = fnr
+    fnr = fnr,
+    variable_importance = variable_importance_df
     #aic = aic,
     #bic = bic
   )
@@ -141,6 +153,9 @@ assess.boost <- function(model, data) {
   cat("FPR:", round(results$fpr * 100, 2), "%\n")
   cat("FNR:", round(results$fnr * 100, 2), "%\n")
   cat("----------------------------------------\n")
+  cat("Variable importance:\n")
+  print(results$variable_importance)
+  cat("----------------------------------------\n")
   #cat("AIC:", results$aic, "\n")
   #cat("BIC:", results$bic, "\n")
   #cat("----------------------------------------\n")
@@ -150,16 +165,15 @@ assess.boost <- function(model, data) {
 
 # k-fold cross validation function: f'_cv
 cv.boost <- function(data, k = 10) {
-  # Create k equally size folds
+  # Create k equally sized folds
   folds <- createFolds(data$Attrition_Flag, k = k)
   
-  # Initialize vectors
-  accuracy <- rep(0, k)
-  auc <- rep(0, k)
-  fpr <- rep(0, k)
-  fnr <- rep(0, k)
-  #aic <- rep(0, k)
-  #bic <- rep(0, k)
+  # Initialize lists to store evaluation metrics and variable importance
+  accuracy <- vector("numeric", k)
+  auc <- vector("numeric", k)
+  fpr <- vector("numeric", k)
+  fnr <- vector("numeric", k)
+  mean_decrease_list <- vector("list", k)
   
   # For each fold
   for (i in 1:k) {
@@ -168,61 +182,66 @@ cv.boost <- function(data, k = 10) {
     test <- data[folds[[i]], ]
     
     # Train the model on the training set
-    model <- learn(train)
+    model <- learn.boost(train)
     
     # Predict on the testing set
     predicted <- predict_prime(model, test)
     predicted_probs <- predict_second(model, test)
     
-    # Positive, negatives and false cases
-    p <- sum(predicted == TRUE)
-    n <- sum(predicted == FALSE)
-    fp <- sum(predicted == TRUE & test$Attrition_Flag == FALSE)
-    fn <- sum(predicted == FALSE & test$Attrition_Flag == TRUE)
-    
-    # Compute the accuracy, Auc, FPR, FNR, AIC and BIC
+    # Compute evaluation metrics
     accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
     roc <- roc(test$Attrition_Flag, predicted_probs)
     auc[i] <- auc(roc)
-    fpr[i] <- fp / n
-    fnr[i] <- fn / p
-    #aic[i] <- AIC(model)
-    #bic[i] <- BIC(model)
+    fp <- sum(predicted == TRUE & test$Attrition_Flag == FALSE)
+    fn <- sum(predicted == FALSE & test$Attrition_Flag == TRUE)
+    fpr[i] <- fp / sum(test$Attrition_Flag == FALSE)
+    fnr[i] <- fn / sum(test$Attrition_Flag == TRUE)
+    
+    # Extract the variable selection information for each boosting iteration
+    var_selection <- model$importance
+    
+    # Sort the variable importance in descending order
+    sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
+    
+    # Store the sorted variable importance in the list
+    mean_decrease_list[[i]] <- sorted_variable_importance
   }
   
-  # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
-  average_accuracy <- mean(accuracy)
-  average_auc <- mean(auc)
-  average_fpr <- mean(fpr)
-  average_fnr <- mean(fnr)
-  #average_aic <- mean(aic)
-  #average_bic <- mean(bic)
+  # Compute average evaluation metrics
+  avg_accuracy <- mean(accuracy)
+  avg_auc <- mean(auc)
+  avg_fpr <- mean(fpr)
+  avg_fnr <- mean(fnr)
   
-  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
-  sd_accuracy <- sd(accuracy)
-  sd_auc <- sd(auc)
-  sd_fpr <- sd(fpr)
-  sd_fnr <- sd(fnr)
-  #sd_aic <- sd(aic)
-  #sd_bic <- sd(bic)
+  # Compute average variable importance
+  # Convert the list to a matrix to compute the average mean decrease
+  mean_decrease_matrix <- do.call(rbind, mean_decrease_list)
   
-  # Print the average accuracy, AIC and BIC with their standard deviations
+  # Compute the average mean decrease across all iterations
+  average_mean_decrease <- colMeans(mean_decrease_matrix)
+  
+  # Create a data frame with variable names and their average mean decrease
+  variable_importance_df <- data.frame(
+    Variable = names(average_mean_decrease),
+    Average_Mean_Decrease = average_mean_decrease,
+    row.names = NULL
+  )
+  
+  # Sort the data frame by average mean decrease in descending order
+  variable_importance_df <- variable_importance_df[order(-variable_importance_df$Average_Mean_Decrease), ]
+  
+  # Print average evaluation metrics and variable importance
   cat("----------------------------------------\n")
-  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
-      round(sd_accuracy * 100, 2), "%\n")
+  cat("Average accuracy:", round(avg_accuracy * 100, 2), "%\n")
+  cat("Average AUC:", round(avg_auc * 100, 2), "%\n")
+  cat("Average FPR:", round(avg_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(avg_fnr * 100, 2), "%\n")
   cat("----------------------------------------\n")
-  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
-      round(sd_auc * 100, 2), "%\n")
+  cat("Average variable importance ranking:\n")
+  print(variable_importance_df)
   cat("----------------------------------------\n")
-  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
-      round(sd_fpr * 100, 2), "%\n")
-  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
-      round(sd_fnr * 100, 2), "%\n")
-  cat("----------------------------------------\n")
-  #cat("Average AIC:", average_aic, "+/-", sd_aic, "\n")
-  #cat("Average BIC:", average_bic, "+/-", sd_bic, "\n")
-  #cat("----------------------------------------\n")
 }
+
 
 # Learning function: f'_learn
 learn <- function(data) {
@@ -567,3 +586,75 @@ boost.resultscv <- cv.boost(bank, k = 10)
 # Random Forest
 rf.results <- assess(bank.rf, test.bank)
 rf.resultscv <- cv(bank, k = 10)
+
+
+
+
+#-------------------------------------------------------------------------------
+# DEBUGGING CHUNK
+k<-10
+data<-bank
+# Create k equally sized folds
+folds <- createFolds(data$Attrition_Flag, k = k)
+
+# Initialize lists to store evaluation metrics and variable importance
+accuracy <- vector("numeric", k)
+auc <- vector("numeric", k)
+fpr <- vector("numeric", k)
+fnr <- vector("numeric", k)
+mean_decrease_list <- vector("list", k)
+
+# For each fold
+for (i in 1:k) {
+  # Split the data into training and testing sets
+  train <- data[-folds[[i]], ]
+  test <- data[folds[[i]], ]
+  
+  # Train the model on the training set
+  model <- learn.boost(train)
+  
+  # Predict on the testing set
+  predicted <- predict_prime.boost(model, test)
+  predicted_probs <- predict_second.boost(model, test)
+  
+  # Compute evaluation metrics
+  accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
+  roc <- roc(test$Attrition_Flag, predicted_probs)
+  auc[i] <- auc(roc)
+  fp <- sum(predicted == TRUE & test$Attrition_Flag == FALSE)
+  fn <- sum(predicted == FALSE & test$Attrition_Flag == TRUE)
+  fpr[i] <- fp / sum(test$Attrition_Flag == FALSE)
+  fnr[i] <- fn / sum(test$Attrition_Flag == TRUE)
+  
+  # Extract the variable selection information for each boosting iteration
+  var_selection <- model$importance
+  
+  # Sort the variable importance in descending order
+  sorted_variable_importance <- sort(var_selection, decreasing = TRUE)
+  
+  # Store the sorted variable importance in the list
+  mean_decrease_list[[i]] <- sorted_variable_importance
+}
+
+# Compute average evaluation metrics
+avg_accuracy <- mean(accuracy)
+avg_auc <- mean(auc)
+avg_fpr <- mean(fpr)
+avg_fnr <- mean(fnr)
+
+# Compute average variable importance
+# Convert the list to a matrix to compute the average mean decrease
+mean_decrease_matrix <- do.call(rbind, mean_decrease_list)
+
+# Compute the average mean decrease across all iterations
+average_mean_decrease <- colMeans(mean_decrease_matrix)
+
+# Create a data frame with variable names and their average mean decrease
+variable_importance_df <- data.frame(
+  Variable = names(average_mean_decrease),
+  Average_Mean_Decrease = average_mean_decrease,
+  row.names = NULL
+)
+
+# Sort the data frame by average mean decrease in descending order
+variable_importance_df <- variable_importance_df[order(-variable_importance_df$Average_Mean_Decrease), ]
