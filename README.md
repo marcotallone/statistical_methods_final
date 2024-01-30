@@ -12,6 +12,20 @@
 | Marco | Tallone | SDIC |
 | Alessio | Valentinis | DSAI |
 
+## Table of contents
+- [TO-DO list](#to-do)
+- [Project Structure](#project-structure)
+- [About the assignment](#assignment)
+- [About the dataset](#about-the-dataset)
+- [Logistic Regression](#logistic-regression)
+- [Splines](#splines)
+- [Ensamble methods](#ensamble-methods)
+- [ROSE package](#rose-package-to-deal-with-class-imbalance)
+  - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
+  - [ROSE for Splines](#rose-results-for-splines)
+  - [ROSE for Ensamble Methods](#rose-results-for-ensamble-methods)
+
+---
 ## TO-DO
 
 * [x] Create Repository
@@ -879,7 +893,7 @@ Average BIC: 7333.634 +/- 33.24607
 ### ROSE Results for Splines
 ...TO DO...
 ### ROSE Results for Ensamble Methods
->[!NOTES]
+>[!NOTE]
 > Look at  `r_scripts/testing_ROSE/ROSE_ensamble.R` 
 > EVALUTATION OF MODELS WITH REDUCED ATTRIBUTES NOT DONE YET
 
