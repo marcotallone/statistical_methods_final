@@ -812,7 +812,7 @@ Average variable importance ranking:
 In this section we will explore how ROSE package might impact on the performance of all the models implemented above
 
 >[!NOTE]
-> The ROSE package has been tested in  `r_scripts/testing_ROSE.r` 
+> The ROSE package has been tested in  `r_scripts/testing_ROSE/` 
 
 There was an evident imbalance among the target variable's classes:
 ```R
@@ -837,6 +837,8 @@ A new (synthetic) dataset was obtained by applying ROSE package, as follows:
 - Attrited customers proportion: 49.41246 %
 
 ### ROSE results for Logistic regression
+>[!NOTE]
+> The ROSE package has been tested in  `r_scripts/testing_ROSE/ROSE_logistic_regression.R` 
 
 Single-run result
 ```terminal
@@ -877,4 +879,5 @@ Average BIC: 7333.634 +/- 33.24607
 ### ROSE Results for Splines
 ...TO DO...
 ### ROSE Results for Ensamble Methods
-...TO DO...
+>[!NOTE]
+> The ROSE package has been tested in  `r_scripts/testing_ROSE/ROSE_logistic_regression.R` 

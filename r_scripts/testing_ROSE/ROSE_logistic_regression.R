@@ -1,9 +1,13 @@
 #-------------------------------------------------------------------------------
 # DATA PRE-PROCESSING
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
-
+library(ROSE)
+library(car)
+library(caret)
+library(pROC)
+library(forcats)
 # Load the dataset and pre-process it
-bank <- read.csv("../datasets/BankChurners.csv", sep = ",")
+bank <- read.csv("../../datasets/BankChurners.csv", sep = ",")
 bank <- bank[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
 bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
 #bank$Attrition_Flag<- as.factor(bank$Attrition_Flag)
@@ -45,7 +49,6 @@ cat("Proportion of attrited:",
     sum(bank$Attrition_Flag==1)/sum(table(bank$Attrition_Flag))*100,"%")
 #-------------------------------------------------------------------------------
 # APPLYING ROSE
-library(ROSE)
 bank_balanced<- ROSE(Attrition_Flag~.,data=bank,seed = 123)$data
 table(bank_balanced$Attrition_Flag)
 cat("Attrited customers (rare class): ",sum(bank_balanced$Attrition_Flag==1))
@@ -54,7 +57,7 @@ cat("Proportion of attrited:",
     sum(bank_balanced$Attrition_Flag==1)/sum(table(bank_balanced$Attrition_Flag))*100,"%")
 #-------------------------------------------------------------------------------
 # LOGISTIC REGRESSION (WILL IT IMPROVE?)
-source("assessment_utils.R") # I put all the assessment functions here
+source("../assessment_utils.R") # I put all the assessment functions here
 
 bank_logistic <- learn(bank_balanced)
 summary(bank_logistic)
