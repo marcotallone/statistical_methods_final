@@ -41,8 +41,9 @@ assess <- function(model, data) {
   # Accuracy from confusion matrix
   accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
   
-  # Dummy clasifier accuracy
-  dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
+  # Dummy classifier accuracy
+  maj_class= names(table(data$Attrition_Flag))[which.max(table(data$Attrition_Flag))]
+  dummy_classifier_accuracy <- sum(actual == maj_class) / length(actual)
   
   # False positive rate
   fpr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
@@ -55,9 +56,8 @@ assess <- function(model, data) {
   auc <- auc(roc)
   
   # Dummy classifier ROC curve and AUC
-  dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
+  dummy_classifier_roc <- roc(actual, rep(as.numeric(maj_class), length(actual)))
   dummy_classifier_auc <- auc(dummy_classifier_roc)
-  
   # AIC
   aic <- AIC(model)
   
@@ -102,6 +102,7 @@ assess <- function(model, data) {
 # k-fold cross validation function: f'_cv
 cv <- function(data, k = 10) {
   # Create k equally size folds
+  set.seed(0)
   folds <- createFolds(data$Attrition_Flag, k = k)
   
   # Initialize vectors

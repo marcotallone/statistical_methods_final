@@ -39,19 +39,19 @@ bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 #-------------------------------------------------------------------------------
 # IMBALANCED DATA
 table(bank$Attrition_Flag)
-cat("Attrited customers (rare class): ",table(bank$Attrition_Flag)[2])
-cat("Existing customers (maj class): ",table(bank$Attrition_Flag)[1])
+cat("Attrited customers (rare class): ",sum(bank$Attrition_Flag==1))
+cat("Existing customers (maj class): ",sum(bank$Attrition_Flag==0))
 cat("Proportion of attrited:",
-    table(bank$Attrition_Flag)[2]/sum(table(bank$Attrition_Flag))*100,"%")
+    sum(bank$Attrition_Flag==1)/sum(table(bank$Attrition_Flag))*100,"%")
 #-------------------------------------------------------------------------------
 # APPLYING ROSE
 library(ROSE)
 bank_balanced<- ROSE(Attrition_Flag~.,data=bank,seed = 123)$data
 table(bank_balanced$Attrition_Flag)
-cat("Attrited customers (rare class): ",table(bank_balanced$Attrition_Flag)[2])
-cat("Existing customers (maj class): ",table(bank_balanced$Attrition_Flag)[1])
+cat("Attrited customers (rare class): ",sum(bank_balanced$Attrition_Flag==1))
+cat("Existing customers (maj class): ",sum(bank_balanced$Attrition_Flag==0))
 cat("Proportion of attrited:",
-    table(bank_balanced$Attrition_Flag)[2]/sum(table(bank_balanced$Attrition_Flag))*100,"%")
+    sum(bank_balanced$Attrition_Flag==1)/sum(table(bank_balanced$Attrition_Flag))*100,"%")
 #-------------------------------------------------------------------------------
 # LOGISTIC REGRESSION (WILL IT IMPROVE?)
 source("assessment_utils.R") # I put all the assessment functions here
@@ -67,3 +67,4 @@ results <- assess(bank_logistic, bank_balanced)
 
 cat("Results on 10-fold cross validation:\n")
 cv(bank_balanced)
+
