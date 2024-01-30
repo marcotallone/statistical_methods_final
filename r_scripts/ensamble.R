@@ -446,6 +446,7 @@ cv <- function(data, k = 10) {
 # IMPORT LIBRARIES
 library(randomForest)
 library(caret)
+options(rgl.useNULL=TRUE)
 library(adabag)   # Boosting
 
 # FIRST TRY WITH BOOSTING
