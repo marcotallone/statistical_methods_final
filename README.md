@@ -838,7 +838,7 @@ A new (synthetic) dataset was obtained by applying ROSE package, as follows:
 
 ### ROSE results for Logistic regression
 >[!NOTE]
-> The ROSE package has been tested in  `r_scripts/testing_ROSE/ROSE_logistic_regression.R` 
+> Look at  `r_scripts/testing_ROSE/ROSE_logistic_regression.R` 
 
 Single-run result
 ```terminal
@@ -879,5 +879,160 @@ Average BIC: 7333.634 +/- 33.24607
 ### ROSE Results for Splines
 ...TO DO...
 ### ROSE Results for Ensamble Methods
->[!NOTE]
-> The ROSE package has been tested in  `r_scripts/testing_ROSE/ROSE_logistic_regression.R` 
+>[!NOTES]
+> Look at  `r_scripts/testing_ROSE/ROSE_ensamble.R` 
+> EVALUTATION OF MODELS WITH REDUCED ATTRIBUTES NOT DONE YET
+
+**(1) AdaBoost with static train/test division**
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing      889      135
+  Attrited      143      857
+----------------------------------------
+Accuracy: 86.26 %
+Dummy classifier accuracy: 50.59 %
+----------------------------------------
+AUC: 94.27 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 13.18 %
+FNR: 14.3 %
+----------------------------------------
+Variable importance:
+                   Variable Mean_Gini_Decrease
+1            Total_Trans_Ct        30.73697237
+2       Total_Revolving_Bal        11.78081861
+3           Total_Trans_Amt         9.92451533
+4  Total_Relationship_Count         6.53934880
+5    Months_Inactive_12_mon         5.67923580
+6      Total_Amt_Chng_Q4_Q1         5.45173144
+7       Total_Ct_Chng_Q4_Q1         5.36548361
+8     Contacts_Count_12_mon         4.80681664
+9            Months_on_book         4.27897800
+10    Avg_Utilization_Ratio         3.10059310
+11             Customer_Age         2.74046246
+12             Credit_Limit         2.47675632
+13          Avg_Open_To_Buy         1.96121788
+14          Dependent_count         1.67558174
+15          Education_Level         1.40795148
+16                   Gender         1.28538718
+17            Card_Category         0.35993893
+18           Marital_Status         0.35973450
+19          Income_Category         0.06847582
+----------------------------------------
+```
+
+**(2) Random Forest with static train/test division**
+
+```terminal 
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing      895      129
+  Attrited      122      878
+----------------------------------------
+Accuracy: 87.6 %
+Dummy classifier accuracy: 50.59 %
+----------------------------------------
+AUC: 94.47 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 12.6 %
+FNR: 12.2 %
+----------------------------------------
+Variable importance:
+                   Variable Mean_Gini_Decrease
+17           Total_Trans_Ct          900.08843
+13      Total_Revolving_Bal          495.51746
+18      Total_Ct_Chng_Q4_Q1          424.42724
+16          Total_Trans_Amt          311.82450
+9  Total_Relationship_Count          274.31340
+11    Contacts_Count_12_mon          210.51677
+15     Total_Amt_Chng_Q4_Q1          191.69802
+19    Avg_Utilization_Ratio          189.09073
+10   Months_Inactive_12_mon          175.51852
+8            Months_on_book          144.87180
+1              Customer_Age          139.52477
+14          Avg_Open_To_Buy          135.38430
+12             Credit_Limit          128.35728
+3           Dependent_count          124.38720
+4           Education_Level          116.00039
+2                    Gender           42.53218
+5            Marital_Status           20.06260
+7             Card_Category           17.94270
+6           Income_Category            8.24609
+----------------------------------------
+```
+
+**(3) AdaBoost with CV**
+
+```terminal
+----------------------------------------
+Average accuracy: 87.25 +/- 0.86 %
+----------------------------------------
+Average AUC: 94.57 +/- 0.8 %
+----------------------------------------
+Average FPR: 13.22 +/- 1.3 %
+Average FNR: 12.27 +/- 1.11 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease    Std_Dev
+1            Total_Trans_Ct        34.75402277 1.91066726
+2       Total_Revolving_Bal        12.94150229 1.37714803
+3           Total_Trans_Amt         8.86350309 0.58198055
+4  Total_Relationship_Count         7.21951758 0.38540495
+5       Total_Ct_Chng_Q4_Q1         6.38904043 0.32115247
+6    Months_Inactive_12_mon         5.56077118 0.24868059
+7      Total_Amt_Chng_Q4_Q1         5.03931768 0.42429973
+8     Contacts_Count_12_mon         4.52194348 0.23543461
+9            Months_on_book         3.31371989 0.55059750
+10    Avg_Utilization_Ratio         2.42278591 0.23323968
+11             Customer_Age         1.94948740 0.29291633
+12          Dependent_count         1.57882847 0.24071690
+13          Avg_Open_To_Buy         1.39104697 0.24696721
+14          Education_Level         1.26301133 0.21294553
+15                   Gender         1.18618812 0.21157629
+16             Credit_Limit         1.00167942 0.20688228
+17           Marital_Status         0.36009097 0.07319159
+18            Card_Category         0.20161414 0.10068651
+19          Income_Category         0.04192886 0.04021035
+----------------------------------------
+```
+
+**(4) Random Forest with CV**
+
+```terminal
+----------------------------------------
+Average accuracy: 87.4 +/- 0.94 %
+----------------------------------------
+Average AUC: 94.59 +/- 0.55 %
+----------------------------------------
+Average FPR: 13.27 +/- 1.64 %
+Average FNR: 11.98 +/- 1.38 %
+----------------------------------------
+Average variable importance ranking:
+                   Variable Mean_Gini_Decrease    Std_Dev
+1            Total_Trans_Ct        1007.348407  1.1698639
+2       Total_Revolving_Bal         563.033669  2.4616142
+3       Total_Ct_Chng_Q4_Q1         469.475970  2.3207382
+4           Total_Trans_Amt         364.184981  1.7972846
+5  Total_Relationship_Count         300.915929  0.9388124
+6     Contacts_Count_12_mon         230.128678  0.3218984
+7      Total_Amt_Chng_Q4_Q1         218.784653  1.1144787
+8     Avg_Utilization_Ratio         215.417326  1.3194480
+9    Months_Inactive_12_mon         198.560604  4.6139068
+10           Months_on_book         160.174048  5.4049504
+11             Customer_Age         156.434189  4.8913729
+12          Avg_Open_To_Buy         149.690026  1.3836461
+13             Credit_Limit         145.677997  9.7837391
+14          Dependent_count         140.642761  1.0893933
+15          Education_Level         128.893361  3.8013993
+16                   Gender          52.817680  9.8382519
+17           Marital_Status          23.393058 16.5777671
+18            Card_Category          21.044929  8.8143522
+19          Income_Category           9.318932  3.9632489
+----------------------------------------
+```
