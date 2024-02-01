@@ -195,8 +195,8 @@ The selection criteria used have been the following:
 The final model has been built using the following variables:
 
 * `Gender`: the gender of the customer
-* `Marital_Status`: the marital status of the customer
-* `Income_Category`: the income category of the customer
+* ~~`Marital_Status`: the marital status of the customer~~
+* ~~`Income_Category`: the income category of the customer~~
 * `Total_Relationship_Count`: the total number of products held by the customer
 * `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
 * `Contacts_Count_12_mon`: the number of contacts in the last 12 months
@@ -204,6 +204,9 @@ The final model has been built using the following variables:
 * `Total_Trans_Amt`: the total transaction amount in the last 12 months
 * `Total_Trans_Ct`: the total transaction count in the last 12 months
 * `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
+
+Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Also, the `Months_Inactive_12_mon` variable has been converted to a factor due to its peculiar distribution (see plot) with the levels `1`, `2`, `3` and `4+` months.
+Both these changes have significantly improved the model performance as portrayed by the metrics below.
 
 The result of the ANOVA test is the following:
 
@@ -220,15 +223,13 @@ Terms added sequentially (first to last)
                          Df Deviance Resid. Df Resid. Dev  Pr(>Chi)    
 NULL                                     10126     8927.2              
 Gender                    1    14.12     10125     8913.1 0.0001715 ***
-Marital_Status            3     5.90     10122     8907.2 0.1165956    
-Income_Category           5    11.16     10117     8896.0 0.0482313 *  
-Total_Relationship_Count  1   225.84     10116     8670.2 < 2.2e-16 ***
-Months_Inactive_12_mon    1   230.09     10115     8440.1 < 2.2e-16 ***
-Contacts_Count_12_mon     1   495.91     10114     7944.2 < 2.2e-16 ***
-Total_Revolving_Bal       1   628.78     10113     7315.4 < 2.2e-16 ***
-Total_Trans_Amt           1   679.95     10112     6635.4 < 2.2e-16 ***
-Total_Trans_Ct            1  1800.47     10111     4835.0 < 2.2e-16 ***
-Total_Ct_Chng_Q4_Q1       1   430.12     10110     4404.9 < 2.2e-16 ***
+Total_Relationship_Count  1   227.81     10124     8685.3 < 2.2e-16 ***
+Months_Inactive_12_mon    4   434.03     10120     8251.2 < 2.2e-16 ***
+Contacts_Count_12_mon     1   479.80     10119     7771.4 < 2.2e-16 ***
+Total_Revolving_Bal       1   608.24     10118     7163.2 < 2.2e-16 ***
+Total_Trans_Amt           1   636.63     10117     6526.6 < 2.2e-16 ***
+Total_Trans_Ct            1  1724.51     10116     4802.0 < 2.2e-16 ***
+Total_Ct_Chng_Q4_Q1       1   439.71     10115     4362.3 < 2.2e-16 ***
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 ```
@@ -237,16 +238,14 @@ While the VIF test:
 
 ```terminal
                              GVIF Df GVIF^(1/(2*Df))
-Gender                   3.569521  1        1.889318
-Marital_Status           1.065029  3        1.010556
-Income_Category          3.574890  5        1.135864
-Total_Relationship_Count 1.117525  1        1.057130
-Months_Inactive_12_mon   1.024143  1        1.012000
-Contacts_Count_12_mon    1.032402  1        1.016072
-Total_Revolving_Bal      1.042901  1        1.021225
-Total_Trans_Amt          6.669191  1        2.582478
-Total_Trans_Ct           6.845917  1        2.616470
-Total_Ct_Chng_Q4_Q1      1.096680  1        1.047225
+Gender                   1.024050  1        1.011954
+Total_Relationship_Count 1.119040  1        1.057847
+Months_Inactive_12_mon   1.027901  4        1.003446
+Contacts_Count_12_mon    1.026478  1        1.013152
+Total_Revolving_Bal      1.039958  1        1.019783
+Total_Trans_Amt          6.658530  1        2.580413
+Total_Trans_Ct           6.762163  1        2.600416
+Total_Ct_Chng_Q4_Q1      1.101724  1        1.049630
 ```
 
 ### Model assessment
@@ -275,35 +274,30 @@ glm(formula = Attrition_Flag ~ ., family = binomial(link = "logit"),
 
 Deviance Residuals: 
     Min       1Q   Median       3Q      Max  
--3.0843  -0.3420  -0.1450  -0.0473   3.6999  
+-2.9883  -0.3308  -0.1429  -0.0468   3.4870  
 
 Coefficients:
-                              Estimate Std. Error z value Pr(>|z|)    
-(Intercept)                   -2.12638    0.25019  -8.499  < 2e-16 ***
-GenderM                       -0.86146    0.14754  -5.839 5.26e-09 ***
-Marital_StatusMarried         -0.45238    0.16146  -2.802 0.005081 ** 
-Marital_StatusSingle           0.01729    0.16248   0.106 0.915259    
-Marital_StatusUnknown         -0.04065    0.20624  -0.197 0.843768    
-Income_Category$40K - $60K    -0.72166    0.18969  -3.804 0.000142 ***
-Income_Category$60K - $80K    -0.46179    0.17566  -2.629 0.008566 ** 
-Income_Category$80K - $120K   -0.25768    0.16980  -1.518 0.129127    
-Income_CategoryLess than $40K -0.63249    0.20376  -3.104 0.001909 ** 
-Income_CategoryUnknown        -0.79028    0.23044  -3.430 0.000605 ***
-Total_Relationship_Count      -0.76106    0.04315 -17.638  < 2e-16 ***
-Months_Inactive_12_mon         0.49064    0.03946  12.435  < 2e-16 ***
-Contacts_Count_12_mon          0.54786    0.04157  13.179  < 2e-16 ***
-Total_Revolving_Bal           -0.74870    0.03858 -19.405  < 2e-16 ***
-Total_Trans_Amt                2.62421    0.10454  25.103  < 2e-16 ***
-Total_Trans_Ct                -4.17099    0.12845 -32.472  < 2e-16 ***
-Total_Ct_Chng_Q4_Q1           -0.79465    0.04534 -17.527  < 2e-16 ***
+                         Estimate Std. Error z value Pr(>|z|)    
+(Intercept)              -0.59957    0.66799  -0.898 0.369414    
+GenderM                  -0.54425    0.07935  -6.858 6.96e-12 ***
+Total_Relationship_Count -0.76274    0.04339 -17.580  < 2e-16 ***
+Months_Inactive_12_mon1  -3.71092    0.68026  -5.455 4.89e-08 ***
+Months_Inactive_12_mon2  -2.39858    0.67176  -3.571 0.000356 ***
+Months_Inactive_12_mon3  -1.94577    0.67049  -2.902 0.003708 ** 
+Months_Inactive_12_mon4+ -1.59904    0.68009  -2.351 0.018711 *  
+Contacts_Count_12_mon     0.52866    0.04167  12.685  < 2e-16 ***
+Total_Revolving_Bal      -0.74802    0.03870 -19.327  < 2e-16 ***
+Total_Trans_Amt           2.61316    0.10463  24.975  < 2e-16 ***
+Total_Trans_Ct           -4.08983    0.12788 -31.982  < 2e-16 ***
+Total_Ct_Chng_Q4_Q1      -0.80523    0.04547 -17.707  < 2e-16 ***
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 8927.2  on 10126  degrees of freedom
-Residual deviance: 4404.9  on 10110  degrees of freedom
-AIC: 4438.9
+Residual deviance: 4362.3  on 10115  degrees of freedom
+AIC: 4386.3
 
 Number of Fisher Scoring iterations: 7
 ```
@@ -314,20 +308,20 @@ The results obtained on the same training dataset are the following:
 ----------------------------------------
           Predicted
 Actual     Existing Attrited
-  Existing     8225      275
-  Attrited      591     1036
+  Existing     8238      262
+  Attrited      576     1051
 ----------------------------------------
-Accuracy: 91.45 %
+Accuracy: 91.73 %
 Dummy classifier accuracy: 83.93 %
 ----------------------------------------
-AUC: 93.54 %
-Dummy classifier AUC: 50 %
+AUC: 93.67 %
+Random classifier AUC: 50 %
 ----------------------------------------
-FPR: 3.24 %
-FNR: 36.32 %
+FPR: 3.08 %
+FNR: 35.4 %
 ----------------------------------------
-AIC: 4438.858 
-BIC: 4561.648 
+AIC: 4386.343 
+BIC: 4473.018 
 ----------------------------------------
 ```
 
@@ -336,15 +330,15 @@ The results obtained using a 10-fold cross validation are the following:
 
 ```terminal
 ----------------------------------------
-Average accuracy: 91.34 +/- 1.14 %
+Average accuracy: 91.66 +/- 1.22 %
 ----------------------------------------
-Average AUC: 93.48 +/- 0.72 %
+Average AUC: 93.66 +/- 1.34 %
 ----------------------------------------
-Average FPR: 3.23 +/- 0.73 %
-Average FNR: 45.27 +/- 7.74 %
+Average FPR: 3.02 +/- 0.75 %
+Average FNR: 44.45 +/- 11.22 %
 ----------------------------------------
-Average AIC: 3996.685 +/- 32.0919 
-Average BIC: 4117.684 +/- 32.09195 
+Average AIC: 3948.844 +/- 49.15868 
+Average BIC: 4034.255 +/- 49.15871 
 ----------------------------------------
 ```
 
@@ -352,20 +346,20 @@ Average BIC: 4117.684 +/- 32.09195
 
 | Metric | Value | Standard Deviation | Assessment Technique |
 |:---:|:---:|:---:|:---:|
-| Accuracy | 91.45 % | - | Whole dataset |
-| AUC | 93.54 % | - | Whole dataset |
+| Accuracy | 91.73% | - | Whole dataset |
+| AUC | 93.67 % | - | Whole dataset |
 | Dummy accuracy | 83.93 % | - | Whole dataset |
-| Dummy AUC | 50 % | - | Whole dataset |
-| FPR | 3.24 % | - | Whole dataset |
-| FNR | 36.32 % | - | Whole dataset |
-| AIC | 4438.858 | - | Whole dataset |
-| BIC | 4561.648 | - | Whole dataset |
-| Accuracy | 91.34 % | 1.14 % | 10-fold CV |
-| AUC | 93.48 % | 0.72 % | 10-fold CV |
-| FPR | 3.23 % | 0.73 % | 10-fold CV |
-| FNR | 45.27 % | 7.74 % | 10-fold CV |
-| AIC | 3996.685 | 32.0919 | 10-fold CV |
-| BIC | 4117.684 | 32.09195 | 10-fold CV |
+| Random AUC | 50 % | - | Whole dataset |
+| FPR | 3.08 % | - | Whole dataset |
+| FNR | 35.4 % | - | Whole dataset |
+| AIC | 4386.343 | - | Whole dataset |
+| BIC | 4473.018 | - | Whole dataset |
+| Accuracy | 91.66 % | 1.22 % | 10-fold CV |
+| AUC | 93.66 % | 0.34 % | 10-fold CV |
+| FPR | 3.02 % | 0.75 % | 10-fold CV |
+| FNR | 44.45 % | 11.22 % | 10-fold CV |
+| AIC | 3948.844 | 49.15868 | 10-fold CV |
+| BIC | 4034.255 | 49.15871 | 10-fold CV |
 
 ## Splines
 I used the gam function available in MASS package.
@@ -692,7 +686,8 @@ Average variable importance ranking:
 ### Analysis on the reduced dataset
 
 I took away the variables non considered also in the other models, as variable importance may not be an indicative value of which variables are viable to be taken away.
->[NOTE!]
+
+>[!NOTE]
 > Let me know if it may be sensible to remove the least important variables according to the ensemble methods, as they are different (I would take away the ones with mean gini decrease < 1(or 2) for boosting and <10(or 20) for randomforest)!!.
 
 ### AdaBoost with static train-test division

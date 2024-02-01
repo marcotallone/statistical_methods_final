@@ -285,3 +285,22 @@ results <- assess(bank_logistic, bank)
 
 cat("Results on 10-fold cross validation:\n")
 cv(bank)
+
+# ------------------------------------------------------------------------------
+
+# # Attempt using the probit link function
+# bank_logistic <- glm(Attrition_Flag ~ .,
+# 					           data = bank,
+# 					           family = binomial(link = "probit"))
+# summary(bank_logistic)
+# anova(bank_logistic, test = "Chisq")
+# vif(bank_logistic)
+
+# # Assessing the model
+# cat("Results on whole dataset:\n")
+# results <- assess(bank_logistic, bank)
+
+# cat("Results on 10-fold cross validation:\n")
+# cv(bank)
+
+# ------------------------------------------------------------------------------
