@@ -104,7 +104,7 @@ cv_penalized_regression <- function(data, k = 10,response="Attrition_Flag",lasso
 # Set working directory as this directory
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 # Load the dataset and pre-process it
-bank <- read.csv("../datasets/BankChurners.csv", sep = ",")
+bank <- read.csv("../../datasets/BankChurners.csv", sep = ",")
 bank <- bank[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
 bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
 # Convert all categorical variables to factors and reorder the levels
@@ -132,7 +132,7 @@ bank[, -c(1, 2, 3, 4)] <- scale(bank[, -c(1, 2, 3, 4)])
 bank_balanced<- ROSE(Attrition_Flag~.,data=bank,seed = 123)$data
 
 #------------------------------RIDGE MODEL--------------------------------------
-cv_penalized_regression(data = bank,k=10,response = "Attrition_Flag",lasso=F)
+cv_penalized_regression(data = bank_balanced,k=10,response = "Attrition_Flag",lasso=F)
 
 #------------------------------LASSO MODEL--------------------------------------
-cv_penalized_regression(data = bank,k=10,response = "Attrition_Flag",lasso=T)
+cv_penalized_regression(data = bank_balanced,k=10,response = "Attrition_Flag",lasso=T)
