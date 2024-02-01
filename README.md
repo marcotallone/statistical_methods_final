@@ -20,7 +20,7 @@
 - [Logistic Regression](#logistic-regression)
 - [Splines](#splines)
 - [Ensamble methods](#ensamble-methods)
-- [ROSE package](#rose-package-to-deal-with-class-imbalance)
+- [Applying ROSE package](#rose-package-to-deal-with-class-imbalance)
   - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
   - [ROSE for Splines](#rose-results-for-splines)
   - [ROSE for Ensamble Methods](#rose-results-for-ensamble-methods)
@@ -891,7 +891,88 @@ Average BIC: 7333.634 +/- 33.24607
 ----------------------------------------
 ```
 ### ROSE Results for Splines
-...TO DO...
+>[!NOTE]
+> Look at  `r_scripts/testing_ROSE/ROSE_splines.R`
+
+**gamfit with static train/test division**
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     4307      816
+  Attrited      694     4310
+----------------------------------------
+Accuracy: 85.09 %
+Dummy classifier accuracy: 50.59 %
+----------------------------------------
+AUC: 92.94 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 15.93 %
+FNR: 13.87 %
+----------------------------------------
+AIC: 6993.906 
+BIC: 7493.183 
+----------------------------------------
+```
+
+**gamfit_less_vars with static train/test division**
+
+```terminal
+----------------------------------------
+          Predicted
+Actual     Existing Attrited
+  Existing     4279      844
+  Attrited      735     4269
+----------------------------------------
+Accuracy: 84.41 %
+Dummy classifier accuracy: 50.59 %
+----------------------------------------
+AUC: 92.32 %
+Dummy classifier AUC: 50 %
+----------------------------------------
+FPR: 16.47 %
+FNR: 14.69 %
+----------------------------------------
+AIC: 7223.264 
+BIC: 7503.034 
+----------------------------------------
+```
+
+**gamfit with CV**
+
+```terminal
+----------------------------------------
+Average accuracy: 84.68 +/- 1.75 %
+----------------------------------------
+Average AUC: 92.52 +/- 0.93 %
+----------------------------------------
+Average FPR: 16.75 +/- 3.27 %
+Average FNR: 13.98 +/- 1.81 %
+----------------------------------------
+Average AIC: 6299.932 +/- 40.04351 
+Average BIC: 6778.618 +/- 44.47466 
+----------------------------------------
+```
+
+**gamfit_less_vars with CV**
+
+```terminal
+----------------------------------------
+Average accuracy: 84.12 +/- 1.36 %
+----------------------------------------
+Average AUC: 92.11 +/- 0.93 %
+----------------------------------------
+Average FPR: 17.13 +/- 3.12 %
+Average FNR: 14.72 +/- 1.62 %
+----------------------------------------
+Average AIC: 6505.484 +/- 39.65097 
+Average BIC: 6772.415 +/- 39.65286 
+----------------------------------------
+```
+
+
 ### ROSE Results for Ensamble Methods
 >[!NOTE]
 > Look at  `r_scripts/testing_ROSE/ROSE_ensamble.R` 
