@@ -14,12 +14,15 @@
 
 ## Table of contents
 - [TO-DO list](#to-do)
-- [Project Structure](#project-structure)
-- [About the assignment](#assignment)
-- [About the dataset](#about-the-dataset)
-- [Logistic Regression](#logistic-regression)
-- [Splines](#splines)
-- [Ensamble methods](#ensamble-methods)
+- [General info](#general-info)
+  - [Project Structure](#project-structure)
+  - [About the assignment](#assignment)
+  - [About the dataset](#about-the-dataset)
+- [Implemented Models](#implemented-models)
+  - [Logistic Regression](#logistic-regression)
+  - [Penalized Regression](#penalized-regression)
+  - [Splines](#splines)
+  - [Ensamble methods](#ensamble-methods)
 - [Applying ROSE package](#rose-package-to-deal-with-class-imbalance)
   - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
   - [ROSE for Splines](#rose-results-for-splines)
@@ -39,10 +42,14 @@
 * [x] Feature selection and variables importance
 * [x] Logistic Regression
 * [x] K-fold CV
+* [x] Apply ROSE and check how models improve (if they improve)
 * [ ] Check computation of AUC, fpr and fnr
 * [ ] Make better exploratory analysis plots
-* [ ] Apply ROSE and check how models improve (if they improve)
+* [ ] ABSOLUTELY CHANGE NAMES TO LEARN/PREDICT FUNCTIONS IF WE WILL CREATE A UNIQUE .Rmd
 * [ ] Prepare presentation slides
+* [ ] Just something I noticed: *assess()* can be assigned to an object; while cv functions not
+
+# General Info
 
 ## Project Structure
 
@@ -175,6 +182,8 @@ bank$Card_Category <- as.factor(bank$Card_Category)
 ```
 
 Luckily there were no missing values in the dataset, so we could proceed with the analysis.
+
+# Implemented Models
 
 ## Logistic regression
 
@@ -361,6 +370,39 @@ Average BIC: 4034.255 +/- 49.15871
 | AIC | 3948.844 | 49.15868 | 10-fold CV |
 | BIC | 4034.255 | 49.15871 | 10-fold CV |
 
+## Penalized Regression
+>[!NOTE]
+> The model with splines can be found in the `r_scripts/penalized_regression.r` file.
+
+I decided to make a unique script with general functions that allow the user to select its preference between RIDGE/LASSO
+
+Regarding RIDGE, the results from a 10-fold CV were:
+```terminal
+----------------------------------------
+Average accuracy: 90.31 +/- 0.56 %
+----------------------------------------
+Average AUC: 91.53 +/- 1.36 %
+----------------------------------------
+Average FPR: 1.61 +/- 0.48 %
+Average FNR: 88.74 +/- 8.03 %
+----------------------------------------
+```
+
+Regarding LASSO, the results from a 10-fold CV were:
+
+```terminal
+----------------------------------------
+Average accuracy: 91.42 +/- 0.8 %
+----------------------------------------
+Average AUC: 93.43 +/- 0.75 %
+----------------------------------------
+Average FPR: 3.12 +/- 0.79 %
+Average FNR: 45.89 +/- 7.79 %
+----------------------------------------
+```
+
+**NOTES**: as we can see, the value of FNR is extremely high😓. Good news is that with ROSE this will improve a lot (see [here](#rose-results-for-penalized-regression))
+
 ## Splines
 I used the gam function available in MASS package.
 >[!NOTE]
@@ -370,6 +412,7 @@ I used the gam function available in MASS package.
 Regarding preprocessing I used the codes available in preprocesing.R in logistic_regression.r and testing_ROSE.R. I decided not to delete at first columns  3, 5, 6, 9, 10, 14, 16, 17, 21, and I implemented 2 differents models to compare them and see if those wariables would be helpful in a gam approach.
 
 As we can see from the summary of gamfit_first_try:
+
 ```terminal
 
 Family: gaussian 
@@ -885,6 +928,37 @@ Average AIC: 7233.987 +/- 33.24618
 Average BIC: 7333.634 +/- 33.24607 
 ----------------------------------------
 ```
+
+### ROSE results for Logistic regression
+>[!NOTE]
+> Look at  `r_scripts/testing_ROSE/ROSE_penalized_regression.R`
+
+Results for RIDGE regression:
+
+```terminal
+----------------------------------------
+Average accuracy: 81.43 +/- 1.22 %
+----------------------------------------
+Average AUC: 89.17 +/- 1.08 %
+----------------------------------------
+Average FPR: 17.73 +/- 1.99 %
+Average FNR: 19.5 +/- 1.43 %
+----------------------------------------
+```
+
+Results for LASSO regression:
+
+```terminal
+----------------------------------------
+Average accuracy: 81.47 +/- 1.07 %
+----------------------------------------
+Average AUC: 89.53 +/- 1.2 %
+----------------------------------------
+Average FPR: 18.42 +/- 1.93 %
+Average FNR: 18.72 +/- 1.47 %
+----------------------------------------
+```
+
 ### ROSE Results for Splines
 >[!NOTE]
 > Look at  `r_scripts/testing_ROSE/ROSE_splines.R`
