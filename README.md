@@ -929,7 +929,7 @@ Average BIC: 7333.634 +/- 33.24607
 ----------------------------------------
 ```
 
-### ROSE results for Logistic regression
+### ROSE results for Penalized Regression
 >[!NOTE]
 > Look at  `r_scripts/testing_ROSE/ROSE_penalized_regression.R`
 
