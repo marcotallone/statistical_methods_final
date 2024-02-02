@@ -19,14 +19,33 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Subtitle1
 
-Bla bla bla
 
-```{r}
+# Problem statement and dataset
 
-```
+# Data preparation and EDA (Exploratory Data Analysis)
 
-## Subtitle2
+# Models implementation
 
-Bla bla bla
+## Logistic regression
+
+### Results on the original dataset
+### Results on the synthetic dataset (ROSE)
+
+## Penalized regression
+### Results on the original dataset
+### Results on the synthetic dataset (ROSE)
+
+## GAM/Splines
+### Results on the original dataset
+### Results on the synthetic dataset (ROSE)
+
+## Decision Trees ?
+
+## Ensemble Methods
+### Results on the original dataset
+### Results on the synthetic dataset (ROSE)
+    
+    
+# Interpretations/Conclusions
+
