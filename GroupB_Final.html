@@ -1675,16 +1675,169 @@ synthetic dataset (ROSE)</a></li>
 
 <div id="problem-statement-and-dataset" class="section level1">
 <h1>Problem statement and dataset</h1>
+<p>The <code>BankChurners</code> dataset contains information about a
+bank’s costumers and their credit card usage. The dataset is available
+on the Kaggle website and it is used for a classification problem. The
+main goal is to predict the <code>Attrition_Flag</code> response
+variable, which basically explains whether a customer will churn or not.
+The dataset consist of 10127 observations and 21 variables.</p>
 </div>
 <div id="data-preparation-and-eda-exploratory-data-analysis" class="section level1">
 <h1>Data preparation and EDA (Exploratory Data Analysis)</h1>
+<p>With the exclusion of the first variable (<code>CLIENTNUM</code>),
+that is just an identification number, and the last two
+(<code>Naive_Bayes_Classifier...</code>) variables, the dataset contains
+19 possible covariates to be used for prediction. Among these, there are
+6 categorical variables and 13 numerical variables.</p>
+<p>The <code>Attrition_Flag</code> variable is the response variable and
+it is a binary variable. The dataset is unbalanced, with only 16.07% of
+the observations being positive, i.e. a churned costumer, for the
+<code>Attrition_Flag</code> variable.<br />
+</p>
 </div>
 <div id="models-implementation" class="section level1">
 <h1>Models implementation</h1>
 <div id="logistic-regression" class="section level2">
 <h2>Logistic regression</h2>
+<p>The first model we build in the attempt of predicting the response
+variable has been a logistic regression model using the <span class="math inline">\(logit\)</span> link function.<br />
+In the initial model we included all the covariates except those that
+had low correlation with the response variable. We further filtered the
+covariates selection by discarding the variables that hed a <span class="math inline">\(p-value\)</span> higher than 0.05 in the
+<code>glm()</code> summary output, i.e. the variables that were not
+statistically significant in the prediction.<br />
+Possible multicollinearity problems, especially among the variables that
+showed high correlation in the exploratory analysis, were checked by
+looking at the Variance Inflation Factor (VIF) of the covariates.<br />
+The final model has been built using the following variables:</p>
+<ul>
+<li><code>Gender</code>: the gender of the customer</li>
+<li><code>Total_Relationship_Count</code>: the total number of products
+held by the customer</li>
+<li><code>Months_Inactive_12_mon</code>: the number of months inactive
+in the last 12 months</li>
+<li><code>Contacts_Count_12_mon</code>: the number of contacts in the
+last 12 months</li>
+<li><code>Total_Revolving_Bal</code>: the total revolving balance on the
+credit card</li>
+<li><code>Total_Trans_Amt</code>: the total transaction amount in the
+last 12 months</li>
+<li><code>Total_Trans_Ct</code>: the total transaction count in the last
+12 months</li>
+<li><code>Total_Ct_Chng_Q4_Q1</code>: the change in transaction count
+from Q4 to Q1</li>
+</ul>
+<p>Aditionally, looking at the data distribution it has been taken the
+logarihmic values of the <code>Total_Trans_Amt</code> variable. Also,
+the <code>Months_Inactive_12_mon</code> variable has been converted to a
+factor due to its peculiar distribution with the levels <code>1</code>,
+<code>2</code>, <code>3</code> and <code>4+</code> months. Both these
+changes have significantly improved the model performance as portrayed
+by the metrics below. An ANOVA test has also been performed to check the
+significance of the model.</p>
+<p>In order to assess the model performance, different effectiveness
+metrics have been used. These have been computed both by fitting the
+model using all the observations in the dataset and also by performing a
+k-fold cros validation with <span class="math inline">\(k=10\)</span>.
+The metrics used are the following:</p>
+<ul>
+<li>Accuracy</li>
+<li>AUC</li>
+<li>FPR (False Positive Rate)</li>
+<li>FNR (False Negative Rate)</li>
+<li>Confusion matrix (<em>only in the whole dataset case</em>)</li>
+<li>AIC</li>
+<li>BIC</li>
+</ul>
+<p>The Dummy classifier has been taken as a baseline for comparison.</p>
 <div id="results-on-the-original-dataset" class="section level3">
 <h3>Results on the original dataset</h3>
+<p>On the given dataset, the built logistic model summary is the
+following:</p>
+<pre class="r"><code>summary(simple_logistic_model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Attrition_Flag ~ ., family = binomial(link = &quot;logit&quot;), 
+##     data = data)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.9883  -0.3308  -0.1429  -0.0468   3.4870  
+## 
+## Coefficients:
+##                          Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)              -0.59957    0.66799  -0.898 0.369414    
+## GenderM                  -0.54425    0.07935  -6.858 6.96e-12 ***
+## Total_Relationship_Count -0.76274    0.04339 -17.580  &lt; 2e-16 ***
+## Months_Inactive_12_mon1  -3.71092    0.68026  -5.455 4.89e-08 ***
+## Months_Inactive_12_mon2  -2.39858    0.67176  -3.571 0.000356 ***
+## Months_Inactive_12_mon3  -1.94577    0.67049  -2.902 0.003708 ** 
+## Months_Inactive_12_mon4+ -1.59904    0.68009  -2.351 0.018711 *  
+## Contacts_Count_12_mon     0.52866    0.04167  12.685  &lt; 2e-16 ***
+## Total_Revolving_Bal      -0.74802    0.03870 -19.327  &lt; 2e-16 ***
+## Total_Trans_Amt           2.61316    0.10463  24.975  &lt; 2e-16 ***
+## Total_Trans_Ct           -4.08983    0.12788 -31.982  &lt; 2e-16 ***
+## Total_Ct_Chng_Q4_Q1      -0.80523    0.04547 -17.707  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 8927.2  on 10126  degrees of freedom
+## Residual deviance: 4362.3  on 10115  degrees of freedom
+## AIC: 4386.3
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<p>The results of the ANOVA test are the following:</p>
+<pre class="r"><code>anova(simple_logistic_model, test = &quot;Chisq&quot;)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Df"],"name":[1],"type":["int"],"align":["right"]},{"label":["Deviance"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["Resid. Df"],"name":[3],"type":["int"],"align":["right"]},{"label":["Resid. Dev"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Pr(>Chi)"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"NA","2":"NA","3":"10126","4":"8927.195","5":"NA","_rn_":"NULL"},{"1":"1","2":"14.12065","3":"10125","4":"8913.074","5":"1.714511e-04","_rn_":"Gender"},{"1":"1","2":"227.81395","3":"10124","4":"8685.260","5":"1.786873e-51","_rn_":"Total_Relationship_Count"},{"1":"4","2":"434.03246","3":"10120","4":"8251.228","5":"1.228960e-92","_rn_":"Months_Inactive_12_mon"},{"1":"1","2":"479.79912","3":"10119","4":"7771.429","5":"2.362955e-106","_rn_":"Contacts_Count_12_mon"},{"1":"1","2":"608.24236","3":"10118","4":"7163.186","5":"2.697987e-134","_rn_":"Total_Revolving_Bal"},{"1":"1","2":"636.62801","3":"10117","4":"6526.558","5":"1.808434e-140","_rn_":"Total_Trans_Amt"},{"1":"1","2":"1724.50964","3":"10116","4":"4802.049","5":"0.000000e+00","_rn_":"Total_Trans_Ct"},{"1":"1","2":"439.70613","3":"10115","4":"4362.343","5":"1.254305e-97","_rn_":"Total_Ct_Chng_Q4_Q1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>As its possible to see all the contribute in decreasing the deviance
+of the model, and they are all statistically significant.<br />
+</p>
+<p>For what concerns the effectiveness metrics, we measured the
+following results on the original dataset:</p>
+<pre class="r"><code>results &lt;- assess_logistic(simple_logistic_model, bank_logistic)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     8238      262
+##   Attrited      576     1051
+## ----------------------------------------
+## Accuracy: 91.73 %
+## Dummy classifier accuracy: 83.93 %
+## ----------------------------------------
+## AUC: 93.67 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 3.08 %
+## FNR: 35.4 %
+## ----------------------------------------
+## AIC: 4386.343 
+## BIC: 4473.018 
+## ----------------------------------------</code></pre>
+<p>And similar results for the k-fold cross validation:</p>
+<pre class="r"><code>cv_logistic(bank_logistic)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 91.68 +/- 0.84 %
+## ----------------------------------------
+## Average AUC: 93.58 +/- 0.9 %
+## ----------------------------------------
+## Average FPR: 3.02 +/- 0.61 %
+## Average FNR: 44.11 +/- 6.51 %
+## ----------------------------------------
+## Average AIC: 3948.851 +/- 26.16429 
+## Average BIC: 4034.262 +/- 26.16431 
+## ----------------------------------------</code></pre>
+<p>From the results we can clearly see that the model is overall
+performing well. The accuracy is consistently over <span class="math inline">\(90\%\)</span> on all the folds, but this is not
+too surprising given the unbalance nature of the model. Good values have
+however been reached for the AUC and the FPR, with the worst metric
+being the FNR which falls just below <span class="math inline">\(50\%\)</span>. The AIC and BIC values are also
+very low, which is a good sign for the model.</p>
 </div>
 <div id="results-on-the-synthetic-dataset-rose" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>

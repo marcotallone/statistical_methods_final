@@ -207,7 +207,7 @@ bank$Income_Category <- forcats::fct_relevel(bank$Income_Category,
 bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 
 # Standardization (optional) all columns except response and categorical
-bank[, -c(1, 2, 3, 4)] <- scale(bank[, -c(1, 2, 3, 4)]) 
+bank[, -c(1, 2, 3, 4)] <- scale(bank[, -c(1, 2, 3, 4)])
 
 # LOGISTIC REGRESSION "LEARNING" PHASE -----------------------------------------
 

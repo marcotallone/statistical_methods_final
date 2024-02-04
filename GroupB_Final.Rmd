@@ -19,17 +19,139 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r libraries, echo=FALSE, warning=FALSE, message=FALSE}
+# Loading all necessary libraries
+library(car)
+library(caret)
+library(pROC)
+library(forcats)
 
+# Loading the utilities for assessment and plots
+source("markdown_utils.r")
+```
 
 # Problem statement and dataset
 
+The `BankChurners` dataset contains information about a bank's costumers and their credit card usage. The dataset is available on the Kaggle website and it is used for a classification problem. The main goal is to predict the `Attrition_Flag` response variable, which basically explains whether a customer will churn or not. The dataset consist of 10127 observations and 21 variables.
+
 # Data preparation and EDA (Exploratory Data Analysis)
+
+With the exclusion of the first variable (`CLIENTNUM`), that is just an identification number, and the last two (`Naive_Bayes_Classifier...`) variables, the dataset contains 19 possible covariates to be used for prediction. Among these, there are 6 categorical variables and 13 numerical variables.
+
+The `Attrition_Flag` variable is the response variable and it is a binary variable. The dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable.\
 
 # Models implementation
 
 ## Logistic regression
 
+The first model we build in the attempt of predicting the response variable has been a logistic regression model using the $logit$ link function.\
+In the initial model we included all the covariates except those that had low correlation with the response variable. We further filtered the covariates selection by discarding the variables that had a $p-value$ higher than 0.05 in the `glm()` summary output, i.e. the variables that were not statistically significant in the prediction.\
+Possible multicollinearity problems, especially among the variables that showed high correlation in the exploratory analysis, were checked by looking at the Variance Inflation Factor (VIF) of the covariates.\
+The final model has been built using the following variables:
+
+* `Gender`: the gender of the customer
+* `Total_Relationship_Count`: the total number of products held by the customer
+* `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
+* `Contacts_Count_12_mon`: the number of contacts in the last 12 months
+* `Total_Revolving_Bal`: the total revolving balance on the credit card
+* `Total_Trans_Amt`: the total transaction amount in the last 12 months
+* `Total_Trans_Ct`: the total transaction count in the last 12 months
+* `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
+
+Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Also, the `Months_Inactive_12_mon` variable has been converted to a factor due to its peculiar distribution with the levels `1`, `2`, `3` and `4+` months.
+Both these changes have significantly improved the model performance as portrayed by the metrics below. An ANOVA test has also been performed to check the significance of the model.
+
+In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cros validation with $k=10$. The metrics used are the following:
+
+* Accuracy
+* AUC
+* FPR (False Positive Rate)
+* FNR (False Negative Rate)
+* Confusion matrix (*only in the whole dataset case*)
+* AIC
+* BIC
+
+The Dummy classifier has been taken as a baseline for comparison.
+
+```{r logistic_model_build, echo=FALSE}
+# Set working directory as this directory
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
+# Load the dataset and pre-process it
+bank_logistic <- read.csv("./datasets/BankChurners.csv", sep = ",")
+bank_logistic <- bank_logistic[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
+bank_logistic$Attrition_Flag <- ifelse(bank_logistic$Attrition_Flag == "Attrited Customer", 1, 0)
+
+# Convert all categorical variables to factors and reorder the levels
+bank_logistic$Gender <- as.factor(bank_logistic$Gender)
+bank_logistic$Marital_Status <- as.factor(bank_logistic$Marital_Status)
+bank_logistic$Marital_Status <- forcats::fct_relevel(bank_logistic$Marital_Status,
+                                            "Unknown",
+                                            "Single",
+                                            "Married",
+                                            "Divorced")
+
+bank_logistic$Income_Category <- as.factor(bank_logistic$Income_Category)
+bank_logistic$Income_Category <- forcats::fct_relevel(bank_logistic$Income_Category,
+                                             "Unknown",
+                                             "Less than $40K",
+                                             "$40K - $60K",
+                                             "$60K - $80K",
+                                             "$80K - $120K",
+                                             "$120K +")
+
+# Override the Total_Trans_Amt variable with its log !!!
+bank_logistic$Total_Trans_Amt <- log(bank_logistic$Total_Trans_Amt)
+
+# Standardization (optional) all columns except response and categorical
+bank_logistic[, -c(1, 2, 3, 4)] <- scale(bank_logistic[, -c(1, 2, 3, 4)])
+
+# Converting Months_Inactive_12_mon to a factor
+bank_logistic$Months_Inactive_12_mon <- as.factor(bank_logistic$Months_Inactive_12_mon)
+levels(bank_logistic$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
+
+# Joining toghether the levels after 4 months
+bank_logistic$Months_Inactive_12_mon <- fct_collapse(bank_logistic$Months_Inactive_12_mon,
+                                            "4+" = c("4", "5", "6+"))
+
+# Removing from the dataset the Marital_Status and Income_Category variables
+bank_logistic <- bank_logistic[, -c(3, 4)]
+
+# Rebuiding and checking the model
+simple_logistic_model <- learn_logistic(bank_logistic)
+
+```
+
 ### Results on the original dataset
+
+On the given dataset, the built logistic model summary is the following:
+
+```{r logistic_model_summary}
+summary(simple_logistic_model)
+```
+
+The results of the ANOVA test are the following:
+
+```{r logistic_model_anova}
+anova(simple_logistic_model, test = "Chisq")
+```
+
+As its possible to see all the contribute in decreasing the deviance of the model, and they are all statistically significant.\
+
+For what concerns the effectiveness metrics, we measured the following results on the original dataset:
+
+```{r logistic model_results, message=FALSE, warning=FALSE}
+results <- assess_logistic(simple_logistic_model, bank_logistic)
+```
+
+And similar results for the k-fold cross validation:
+
+```{r logistic_model_cv_results, message=FALSE, warning=FALSE}
+cv_logistic(bank_logistic)
+```
+
+From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the model. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $50\%$. The AIC and BIC values are also very low, which is a good sign for the model.
+
 ### Results on the synthetic dataset (ROSE)
 
 ## Penalized regression

@@ -43,10 +43,9 @@
 * [x] Logistic Regression
 * [x] K-fold CV
 * [x] Apply ROSE and check how models improve (if they improve)
-* [ ] Check computation of AUC, fpr and fnr
-* [ ] Make better exploratory analysis plots
+* [x] Check computation of AUC, fpr and fnr
 * [ ] ABSOLUTELY CHANGE NAMES TO LEARN/PREDICT FUNCTIONS IF WE WILL CREATE A UNIQUE .Rmd
-* [ ] Prepare presentation slides
+* [ ] Decide presentation scheduling and timings
 * [ ] Just something I noticed: *assess()* can be assigned to an object; while cv functions not
 
 # General Info
@@ -77,7 +76,7 @@ Interesting notebook to look at [here](https://www.kaggle.com/code/kaushikmajumd
 
 ## About the dataset
 
-A manager at the bank is disturbed with more and more customers leaving their credit card services. They would really appreciate if one could predict for them who is gonna get churned so they can proactively go to the customer to provide them better services and turn customers' decisions in the opposite direction
+A manager at the bank is disturbed with more and more customers leaving their credit card services. They would really appreciate if one could predict for them who is gonna get churned so they can proactively go to the customer to provide them better services and turn customers' decisions in the opposite direction.
 
 I got this dataset from the [leaps.analyttica wesite](https://leaps.analyttica.com/home). I have been using this for a while to get datasets and accordingly work on them to produce fruitful results. The site explains how to solve a particular business problem.
 
