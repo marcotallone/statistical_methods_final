@@ -141,7 +141,7 @@ As its possible to see all the contribute in decreasing the deviance of the mode
 For what concerns the effectiveness metrics, we measured the following results on the original dataset:
 
 ```{r logistic model_results, message=FALSE, warning=FALSE}
-results <- assess_logistic(simple_logistic_model, bank_logistic)
+logistic_results <- assess_logistic(simple_logistic_model, bank_logistic)
 ```
 
 And similar results for the k-fold cross validation:
@@ -153,6 +153,53 @@ cv_logistic(bank_logistic)
 From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the model. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $50\%$. The AIC and BIC values are also very low, which is a good sign for the model.
 
 ### Results on the synthetic dataset (ROSE)
+
+As noticed above, the dataset is characterized by a strong class imbalance:
+```{r}
+table(bank_logistic$Attrition_Flag)
+```
+
+```{r,echo=FALSE}
+cat("Attrited customers (rare class): ",sum(bank_logistic$Attrition_Flag==1))
+cat("Existing customers (maj class): ",sum(bank_logistic$Attrition_Flag==0))
+cat("Proportion of attrited:",
+    sum(bank_logistic$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
+```
+
+Let's apply *ROSE* package:
+```{r}
+library(ROSE)
+bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
+```
+
+```{r}
+table(bank_logistic_balanced$Attrition_Flag)
+```
+
+```{r,echo=FALSE}
+cat("Attrited customers (rare class): ",sum(bank_logistic_balanced$Attrition_Flag==1))
+cat("Existing customers (maj class): ",sum(bank_logistic_balanced$Attrition_Flag==0))
+cat("Proportion of attrited:",
+    sum(bank_logistic_balanced$Attrition_Flag==1)/sum(table(bank_logistic_balanced$Attrition_Flag))*100,"%")
+```
+
+Now we can learn a logistic regression model on the new balanced dataset:
+
+```{r}
+ROSE_logistic_model <- learn_logistic(bank_logistic_balanced)
+```
+
+For what concerns the effectiveness metrics on the original dataset:
+
+```{r, message=FALSE, warning=FALSE}
+ROSE_logistic_results<- assess_logistic(ROSE_logistic_model, bank_logistic_balanced)
+```
+
+Instead, by computing a 10-fold CV:
+```{r, message=FALSE, warning=FALSE}
+cv_logistic(bank_logistic_balanced)
+```
+**Comment:** the accuracy of this model, as expected, is lower than one of the logistic model learnt on the unbalanced dataset. However, the difference with respect to the dummy classifier becomes definitely more evident. Regarding the AUC score, even its value is slightly lower than before, it still showcases how good is the fit of our model. The metric that really improves after applying ROSE is the FNR: the model learnt on the unbalanced dataset had an average FNR of 44.11%, while now it drops around 17.87%. Conversely, FPR increases from 3.02% to 17.85%, but since we don't know anything about the costs of the errors, we considered it better to have more balanced metrics for FPR and FNR.
 
 ## Penalized regression
 ### Results on the original dataset

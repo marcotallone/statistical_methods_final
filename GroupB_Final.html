@@ -1703,7 +1703,7 @@ the observations being positive, i.e. a churned costumer, for the
 variable has been a logistic regression model using the <span class="math inline">\(logit\)</span> link function.<br />
 In the initial model we included all the covariates except those that
 had low correlation with the response variable. We further filtered the
-covariates selection by discarding the variables that hed a <span class="math inline">\(p-value\)</span> higher than 0.05 in the
+covariates selection by discarding the variables that had a <span class="math inline">\(p-value\)</span> higher than 0.05 in the
 <code>glm()</code> summary output, i.e. the variables that were not
 statistically significant in the prediction.<br />
 Possible multicollinearity problems, especially among the variables that
@@ -1760,10 +1760,6 @@ following:</p>
 ## glm(formula = Attrition_Flag ~ ., family = binomial(link = &quot;logit&quot;), 
 ##     data = data)
 ## 
-## Deviance Residuals: 
-##     Min       1Q   Median       3Q      Max  
-## -2.9883  -0.3308  -0.1429  -0.0468   3.4870  
-## 
 ## Coefficients:
 ##                          Estimate Std. Error z value Pr(&gt;|z|)    
 ## (Intercept)              -0.59957    0.66799  -0.898 0.369414    
@@ -1800,7 +1796,7 @@ of the model, and they are all statistically significant.<br />
 </p>
 <p>For what concerns the effectiveness metrics, we measured the
 following results on the original dataset:</p>
-<pre class="r"><code>results &lt;- assess_logistic(simple_logistic_model, bank_logistic)</code></pre>
+<pre class="r"><code>logistic_results &lt;- assess_logistic(simple_logistic_model, bank_logistic)</code></pre>
 <pre><code>## ----------------------------------------
 ##           Predicted
 ## Actual     Existing Attrited
@@ -1841,6 +1837,74 @@ very low, which is a good sign for the model.</p>
 </div>
 <div id="results-on-the-synthetic-dataset-rose" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>
+<p>As noticed above, the dataset is characterized by a strong class
+imbalance:</p>
+<pre class="r"><code>table(bank_logistic$Attrition_Flag)</code></pre>
+<pre><code>## 
+##    0    1 
+## 8500 1627</code></pre>
+<pre><code>## Attrited customers (rare class):  1627</code></pre>
+<pre><code>## Existing customers (maj class):  8500</code></pre>
+<pre><code>## Proportion of attrited: 16.06596 %</code></pre>
+<p>Let’s apply <em>ROSE</em> package:</p>
+<pre class="r"><code>library(ROSE)</code></pre>
+<pre><code>## Loaded ROSE 0.0-4</code></pre>
+<pre class="r"><code>bank_logistic_balanced&lt;- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data</code></pre>
+<pre class="r"><code>table(bank_logistic_balanced$Attrition_Flag)</code></pre>
+<pre><code>## 
+##    0    1 
+## 5123 5004</code></pre>
+<pre><code>## Attrited customers (rare class):  5004</code></pre>
+<pre><code>## Existing customers (maj class):  5123</code></pre>
+<pre><code>## Proportion of attrited: 49.41246 %</code></pre>
+<p>Now we can learn a logistic regression model on the new balanced
+dataset:</p>
+<pre class="r"><code>ROSE_logistic_model &lt;- learn_logistic(bank_logistic_balanced)</code></pre>
+<p>For what concerns the effectiveness metrics on the original
+dataset:</p>
+<pre class="r"><code>ROSE_logistic_results&lt;- assess_logistic(ROSE_logistic_model, bank_logistic_balanced)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     4220      903
+##   Attrited      890     4114
+## ----------------------------------------
+## Accuracy: 82.29 %
+## Dummy classifier accuracy: 50.59 %
+## ----------------------------------------
+## AUC: 90.14 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 17.63 %
+## FNR: 17.79 %
+## ----------------------------------------
+## AIC: 8081.688 
+## BIC: 8168.364 
+## ----------------------------------------</code></pre>
+<p>Instead, by computing a 10-fold CV:</p>
+<pre class="r"><code>cv_logistic(bank_logistic_balanced)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 82.19 +/- 1.33 %
+## ----------------------------------------
+## Average AUC: 90.08 +/- 0.83 %
+## ----------------------------------------
+## Average FPR: 17.85 +/- 2.71 %
+## Average FNR: 17.87 +/- 2.26 %
+## ----------------------------------------
+## Average AIC: 7274.567 +/- 31.97377 
+## Average BIC: 7359.978 +/- 31.97365 
+## ----------------------------------------</code></pre>
+<p><strong>Comment:</strong> the accuracy of this model, as expected, is
+lower than one of the logistic model learnt on the unbalanced dataset.
+However, the difference with respect to the dummy classifier becomes
+definitely more evident. Regarding the AUC score, even its value is
+slightly lower than before, it still showcases how good is the fit of
+our model. The metric that really improves after applying ROSE is the
+FNR: the model learnt on the unbalanced dataset had an average FNR of
+44.11%, while now it drops around 17.87%. Conversely, FPR increases from
+3.02% to 17.85%, but since we don’t know anything about the costs of the
+errors, we considered it better to have more balanced metrics for FPR
+and FNR.</p>
 </div>
 </div>
 <div id="penalized-regression" class="section level2">
