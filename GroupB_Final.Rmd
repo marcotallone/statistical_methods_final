@@ -61,7 +61,7 @@ The final model has been built using the following variables:
 Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Also, the `Months_Inactive_12_mon` variable has been converted to a factor due to its peculiar distribution with the levels `1`, `2`, `3` and `4+` months.
 Both these changes have significantly improved the model performance as portrayed by the metrics below. An ANOVA test has also been performed to check the significance of the model.
 
-In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cros validation with $k=10$. The metrics used are the following:
+In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cross validation with $k=10$. The metrics used are the following:
 
 * Accuracy
 * AUC
@@ -212,7 +212,123 @@ cv_logistic(bank_logistic_balanced)
 ## Decision Trees ?
 
 ## Ensemble Methods
+
+The last class of methods we used to model the `Attrition_Flag` variable is ensamble methods, in particular we focussed on AdaBoost and Random Forest.\
+The first model we built is an AdaBoost model on the whole dataset, which on its own achieved some great results. Then we proceeded by removing the variables considered not statistically significant in more complex models like `GAM`. This slight modification didn't much modify the accuracy of the model, which is always on the order of about $\sim90\%$.\
+The final model has been built using the following variables:
+
+* `Gender`: the gender of the customer
+* `Total_Relationship_Count`: the total number of products held by the customer
+* `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
+* `Contacts_Count_12_mon`: the number of contacts in the last 12 months
+* `Total_Revolving_Bal`: the total revolving balance on the credit card
+* `Total_Trans_Amt`: the total transaction amount in the last 12 months
+* `Total_Trans_Ct`: the total transaction count in the last 12 months
+* `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
+* `Marital_Status`: the marital status of the customer
+* `Income_Category`: the income category of the customer
+
+The same pre-processing steps of the `GLM` model were performed, slightly modifying classes or taking logarithmic values and converting the `Months_Inactive_12_mon` variable to a factor.\
+The effectiveness metrics used to assess the model are:
+
+* Accuracy
+* AUC
+* FPR (False Positive Rate)
+* FNR (False Negative Rate)
+* Confusion matrix
+* Variable importance
+
+The dummy classifier has been taken as a baseline for comparison.
+
+```{r ada_model_build, echo=FALSE}
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
+# Load the dataset and pre-process it
+bank_ensamble <- read.csv("datasets/BankChurners.csv", sep = ",")
+bank_ensamble <- bank_ensamble[, -c(1, 22, 23)]
+#bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
+# Convert Attrition_Flag to a binary factor
+bank_ensamble$Attrition_Flag <- factor(bank_ensamble$Attrition_Flag == "Attrited Customer", levels = c(FALSE, TRUE))
+
+# If "Attrited Customer" is TRUE, it will be coded as 1, and other values will be coded as 0
+
+
+# Convert all categorical variables to factors and reorder the levels
+bank_ensamble$Gender <- as.factor(bank_ensamble$Gender)
+bank_ensamble$Income_Category <- fct_collapse(bank_ensamble$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
+# Changing the levels of Marital_Status in either married or not married
+bank_ensamble$Marital_Status <- fct_collapse(bank_ensamble$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+# Converting Months_Inactive_12_mon to a factor
+bank_ensamble$Months_Inactive_12_mon <- as.factor(bank_ensamble$Months_Inactive_12_mon)
+levels(bank_ensamble$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
+
+# Joining together the levels after 4 months
+bank_ensamble$Months_Inactive_12_mon <- fct_collapse(bank_ensamble$Months_Inactive_12_mon,
+                                            "4+" = c("4", "5", "6+"))
+
+bank_ensamble$Education_Level <- as.factor(bank_ensamble$Education_Level)
+bank_ensamble$Marital_Status <- as.factor(bank_ensamble$Marital_Status)
+bank_ensamble$Income_Category <- as.factor(bank_ensamble$Income_Category)
+bank_ensamble$Card_Category <- as.factor(bank_ensamble$Card_Category)
+# Override the Total_Trans_Amt variable with its log !!!
+bank_ensamble$Total_Trans_Amt <- log(bank_ensamble$Total_Trans_Amt)
+bank_ensamble <- bank_ensamble[, -c(2, 4, 5, 8, 9, 13, 15, 16, 20)]
+
+# Actual model building
+set.seed(1234)
+index <- createDataPartition(bank_ensamble$Attrition_Flag , p =0.8, list = FALSE)
+
+train_bank_ensamble <- bank_ensamble[index,]
+test_bank_ensamble <- bank_ensamble[-index,]
+boost_model <- learn_boost(train_bank_ensamble)
+rf_model <- learn_rf(train_bank_ensamble)
+```
+
 ### Results on the original dataset
+A summary-like output of the model doesn't exist, but we can still assess the model performance using the metrics described above.
+
+First we show the results relative to a single run of the model on the dataset:
+
+```{r ada_model_summary}
+boost_results <- assess_boost(boost_model, test_bank_ensamble)
+
+```
+
+Then the results on a 10-fold cross validation:
+
+```{r ada_model_cv_results}
+cv_boost_results <- cv_boost(bank_ensamble)
+
+```
+
+As we can see from these results, AdaBoost is performing pretty well, having a consistent accuracy of over $90\%$ and a good AUC score. The FPR and FNR are also very low, keeping them consistently under $20\%$. Not having an AIC or BIC-like score, we can't really compare the model to the previous ones, but the results on classification are much better than the ones above, in particular with respect to the simple logistic regression.\
+
+Passing to Random Forest, we perform the same analysis:
+
+```{r rf_model_summary}
+rf_results <- assess_rf(rf_model, test_bank_ensamble)
+
+```
+
+```{r rf_model_cv_results}
+cv_rf_results <- cv_rf(bank_ensamble)
+
+```
+
+The results are very similar to the ones of AdaBoost, with the only difference being a slightly lower accuracy and AUC score. The FPR and FNR are also very low, keeping them consistently under $20\%$. A consistent note should be pointed that on the fact that performing cross validation, the average FNR decreases to below $5\%$, demonstrating the adaptive power of Random Forest also on unbalanced data.\
+
+
 ### Results on the synthetic dataset (ROSE)
     
     
