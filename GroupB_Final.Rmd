@@ -25,7 +25,8 @@ library(car)
 library(caret)
 library(pROC)
 library(forcats)
-
+library(ROSE)
+options(rgl.useNULL=TRUE)
 # Loading the utilities for assessment and plots
 source("markdown_utils.r")
 ```
@@ -168,7 +169,6 @@ cat("Proportion of attrited:",
 
 Let's apply *ROSE* package:
 ```{r}
-library(ROSE)
 bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
 ```
 
@@ -202,12 +202,38 @@ cv_logistic(bank_logistic_balanced)
 **Comment:** the accuracy of this model, as expected, is lower than one of the logistic model learnt on the unbalanced dataset. However, the difference with respect to the dummy classifier becomes definitely more evident. Regarding the AUC score, even its value is slightly lower than before, it still showcases how good is the fit of our model. The metric that really improves after applying ROSE is the FNR: the model learnt on the unbalanced dataset had an average FNR of 44.11%, while now it drops around 17.87%. Conversely, FPR increases from 3.02% to 17.85%, but since we don't know anything about the costs of the errors, we considered it better to have more balanced metrics for FPR and FNR.
 
 ## Penalized regression
+
+From the dataset used for logistic regression we tried to apply both ridge and lasso penalizations when estimating the model. As we did for the logistic, we implemented a custom function to learn the model, which is based on the `glmnet` library.
+
 ### Results on the original dataset
+
+```{r assess_ridge,warning=FALSE,message=FALSE}
+#------------------------------RIDGE MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic,k=10,response = "Attrition_Flag",lasso=FALSE)
+```
+
+```{r assess_lasso,warning=FALSE,message=FALSE}
+#------------------------------LASSO MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic,k=10,response = "Attrition_Flag",lasso=TRUE)
+```
+
 ### Results on the synthetic dataset (ROSE)
 
+Now we build the models on the balanced (synthetic) dataset we used for logistic regression:
+
+```{r assess_ridge_ROSE,warning=FALSE,message=FALSE}
+#------------------------------RIDGE MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic_balanced,k=10,response = "Attrition_Flag",lasso=FALSE)
+```
+
+```{r assess_lasso_ROSE,warning=FALSE,message=FALSE}
+#------------------------------LASSO MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic_balanced,k=10,response = "Attrition_Flag",lasso=TRUE)
+```
+As we illustrated for the logistic regression, balancing the dataset results in a decreasing of the models accuracy, while the difference with respect to the dummy classifier becomes definitely more evident. Even though AUC score is now slightly lower than before, the FNR improves a lot. For the lasso model it decreases from 44.86%  to 17.82%, while for the ridge model the enhancement is even more evident: FNR decreases from 83.23% to 18.88%.
 
 ## GAM/Splines
-We also tried using a General Additive Model to predict the Attrition_Flag variable. At first we included all the variables in the model, using a spline approximation for all the non categorical variable, obtaining an accuracy of 96,42% (AUC 98.99%). 
+We also tried using a General Additive Model to predict the Attrition_Flag variable. At first we included all the variables in the model, using a spline approximation for all the non categorical variables, obtaining an accuracy of 96,42% (AUC 98.99%). 
 Than we removed from the model the variables not statistically significant and we included as linear variables whose spline approximation has an expected degree of freedom minor or equal to 2 obtaining an accuracy of 96,46% (AUC 98.92%). 
 The final model has been built using as linear:
 * `Customer_Age`: customer age in years
@@ -275,8 +301,6 @@ bank_gam$Marital_Status <- as.factor(bank_gam$Marital_Status)
 bank_gam$Income_Category <- as.factor(bank_gam$Income_Category)
 bank_gam$Card_Category <- as.factor(bank_gam$Card_Category)
 bank_gam$Total_Trans_Amt <- log(bank_gam$Total_Trans_Amt)
-
-gamfit<-learn_gam(bank_gam)
 ```
 
 ### Results on the original dataset
@@ -284,6 +308,7 @@ gamfit<-learn_gam(bank_gam)
 The build gamfit model is:
 
 ```{r gam_model_summary}
+gamfit<-learn_gam(bank_gam)
 summary(gamfit)
 ```
 Regarding the effectiveness metrics we obtained:
@@ -298,6 +323,25 @@ cv_gam(bank_gam)
 ```
 
 ### Results on the synthetic dataset (ROSE)
+
+First of all, let's obtain the synthetic dataset:
+```{r,message=FALSE, warning=FALSE}
+bank_gam_balanced<- ROSE(Attrition_Flag~.,data=bank_gam,seed = 123)$data
+```
+
+Learning phase of the model:
+```{r,message=FALSE, warning=FALSE}
+ROSE_gamfit<-learn_gam(bank_gam_balanced)
+```
+
+
+```{r,message=FALSE, warning=FALSE}
+ROSE_gam_results<- assess_gam(ROSE_gamfit, bank_gam_balanced)
+```
+
+```{r, message=FALSE, warning=FALSE}
+cv_gam(bank_gam_balanced)
+```
 
 ## Decision Trees ?
 
@@ -381,6 +425,10 @@ index <- createDataPartition(bank_ensamble$Attrition_Flag , p =0.8, list = FALSE
 
 train_bank_ensamble <- bank_ensamble[index,]
 test_bank_ensamble <- bank_ensamble[-index,]
+```
+
+Learning phase:
+```{r learning_boost_rf,message=FALSE,warning=FALSE}
 boost_model <- learn_boost(train_bank_ensamble)
 rf_model <- learn_rf(train_bank_ensamble)
 ```
@@ -390,36 +438,33 @@ A summary-like output of the model doesn't exist, but we can still assess the mo
 
 First we show the results relative to a single run of the model on the dataset:
 
-```{r ada_model_summary}
+```{r ada_model_summary,message=FALSE,warning=FALSE}
 boost_results <- assess_boost(boost_model, test_bank_ensamble)
-
 ```
 
 Then the results on a 10-fold cross validation:
 
-```{r ada_model_cv_results}
+```{r ada_model_cv_results,message=FALSE,warning=FALSE}
 cv_boost_results <- cv_boost(bank_ensamble)
-
 ```
 
 As we can see from these results, AdaBoost is performing pretty well, having a consistent accuracy of over $90\%$ and a good AUC score. The FPR and FNR are also very low, keeping them consistently under $20\%$. Not having an AIC or BIC-like score, we can't really compare the model to the previous ones, but the results on classification are much better than the ones above, in particular with respect to the simple logistic regression.\
 
 Passing to Random Forest, we perform the same analysis:
 
-```{r rf_model_summary}
+```{r rf_model_summary,message=FALSE,warning=FALSE}
 rf_results <- assess_rf(rf_model, test_bank_ensamble)
-
 ```
 
-```{r rf_model_cv_results}
+```{r rf_model_cv_results,message=FALSE,warning=FALSE}
 cv_rf_results <- cv_rf(bank_ensamble)
-
 ```
 
 The results are very similar to the ones of AdaBoost, with the only difference being a slightly lower accuracy and AUC score. The FPR and FNR are also very low, keeping them consistently under $20\%$. A consistent note should be pointed that on the fact that performing cross validation, the average FNR decreases to below $5\%$, demonstrating the adaptive power of Random Forest also on unbalanced data.\
 
 
 ### Results on the synthetic dataset (ROSE)
+
     
     
 # Interpretations/Conclusions

@@ -1,4 +1,5 @@
 # LIBRARIES --------------------------------------------------------------------
+options(rgl.useNULL=TRUE) #don't remove this!
 library(car)
 library(caret)
 library(pROC)
@@ -6,11 +7,12 @@ library(forcats)
 library(pROC)
 library(adabag)
 library(randomForest)
-
 library(MASS)
 library(splines)
 library(mgcv)
-
+library(glmnet)
+library(tidyverse)
+library(recipes) #
 
 # LOGISTIC REGRESSION ----------------------------------------------------------
 # LEARN / PREDICT FUNCTIONS ----------------------------------------------------
@@ -188,6 +190,102 @@ cv_logistic <- function(data, k = 10) {
   cat("----------------------------------------\n")
 }
 
+# PENALIZED REGRESSION ----------------------------------------------------------
+# LEARN / PREDICT FUNCTIONS ----------------------------------------------------
+learn_penalized_regression<- function(data, response="Attrition_Flag",lasso=FALSE) {
+  # Separate X and y
+  # X needs to one-hot-encode factor vars...
+  X <- makeX(data %>% select(!response))
+  y <- data %>% select(response) %>% as.matrix()
+  # Fit ridge regression model
+  model <- cv.glmnet(X, y, family = "binomial", alpha = as.numeric(lasso))
+  
+  return(model)
+}
+# Prediction function: f'_predict
+predict_prime_penalized_regression <- function(model, data, response="Attrition_Flag",tau = 0.5) {
+  X <- makeX(data %>% select(!response))
+  # Predictions
+  predicted <- predict(model, newx = X, type = "response",s = "lambda.min") > tau
+  return(predicted)
+}
+
+# Prediction function: f''_predict
+predict_second_penalized_regression <- function(model, data,response="Attrition_Flag") {
+  # Predicted probabilities
+  X <- makeX(data %>% select(!response))
+  predicted_probs <- predict(model, newx = X, type = "response",s = "lambda.min")
+  return(predicted_probs)
+}
+# ASSESSMENT FUNCTION ----------------------------------------------------------
+cv_penalized_regression <- function(data, k = 10,response="Attrition_Flag",lasso=FALSE) {
+  # Create k equally size folds
+  set.seed(0)
+  folds <- createFolds(data[,response], k = k)
+  
+  # Initialize vectors
+  accuracy <- rep(0, k)
+  auc <- rep(0, k)
+  fpr <- rep(0, k)
+  fnr <- rep(0, k)
+  aic <- rep(0, k)
+  bic <- rep(0, k)
+  
+  # For each fold
+  for (i in 1:k) {
+    # Split the data into training and testing sets
+    train <- data[-folds[[i]], ]
+    test <- data[folds[[i]], ]
+    
+    # Train the model on the training set
+    model <- learn_penalized_regression(data = train,response=response,lasso)
+    
+    # Predict on the testing set
+    predicted <- as.numeric(predict_prime_penalized_regression(model,test,response))
+    predicted_probs <- as.numeric(predict_second_penalized_regression(model,test,response))
+    
+    # Positive, negatives and false cases
+    p <- sum(predicted == 1)
+    n <- sum(predicted == 0)
+    fp <- sum(predicted == 1 & test[,response] == 0)
+    fn <- sum(predicted == 0 & test[,response] == 1)
+    
+    # Compute the accuracy, Auc, FPR, FNR, AIC and BIC
+    accuracy[i] <- sum(predicted == test[,response]) / nrow(test)
+    roc <- roc(test[,response], predicted_probs)
+    auc[i] <- auc(roc)
+    fpr[i] <- fp / n
+    fnr[i] <- fn / p
+  }
+  
+  # Compute the average accuracy, AUC, FPR, FNR, AIC and BIC
+  average_accuracy <- mean(accuracy)
+  average_auc <- mean(auc)
+  average_fpr <- mean(fpr)
+  average_fnr <- mean(fnr)
+  
+  # Compute the standard deviation of the accuracy, AUC, FPR, FNR, AIC and BIC
+  sd_accuracy <- sd(accuracy)
+  sd_auc <- sd(auc)
+  sd_fpr <- sd(fpr)
+  sd_fnr <- sd(fnr)
+  
+  # Print the average accuracy, AIC and BIC with their standard deviations
+  cat("----------------------------------------\n")
+  cat("Average accuracy:", round(average_accuracy * 100, 2), "+/-",
+      round(sd_accuracy * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average AUC:", round(average_auc * 100, 2), "+/-",
+      round(sd_auc * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+  cat("Average FPR:", round(average_fpr * 100, 2), "+/-",
+      round(sd_fpr * 100, 2), "%\n")
+  cat("Average FNR:", round(average_fnr * 100, 2), "+/-",
+      round(sd_fnr * 100, 2), "%\n")
+  cat("----------------------------------------\n")
+}
+
+
 # -----------------------------------------------------------------------------
 #GAM/SPLINES------------------------------------------------------------------
 # LEARN / PREDICT FUNCTIONS ---------------------------------------------------
@@ -205,7 +303,7 @@ learn_gam <- function(data) {
              +s(Total_Trans_Amt)
              +s(Total_Trans_Ct)
              +s(Total_Ct_Chng_Q4_Q1)
-             ,family = binomial(link = "logit"), data=bank_gam)
+             ,family = binomial(link = "logit"), data=data)
   return(model)
 }
 
@@ -236,7 +334,8 @@ assess_gam <- function(model, data) {
   accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
   
   # Dummy clasifier accuracy
-  dummy_classifier_accuracy <- sum(actual == 0) / length(actual)
+  maj_class= names(table(data$Attrition_Flag))[which.max(table(data$Attrition_Flag))]
+  dummy_classifier_accuracy <- sum(actual == maj_class) / length(actual)
   
   # False positive rate
   fpr <- confusion_matrix[1, 2] / sum(confusion_matrix[1, ])
@@ -249,7 +348,7 @@ assess_gam <- function(model, data) {
   auc <- auc(roc)
   
   # Dummy classifier ROC curve and AUC
-  dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
+  dummy_classifier_roc <- roc(actual, rep(as.numeric(maj_class), length(actual)))
   dummy_classifier_auc <- auc(dummy_classifier_roc)
   
   # AIC
@@ -420,7 +519,7 @@ assess_boost <- function(model, data) {
   fnr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
   
   # ROC curve and AUC
-  roc <- roc(actual, predict_second.boost(model, data))
+  roc <- roc(actual, predict_second_boost(model, data))
   auc <- auc(roc)
   
   # Dummy classifier ROC curve and AUC
@@ -478,6 +577,7 @@ assess_boost <- function(model, data) {
 # k-fold cross validation function: f'_cv
 cv_boost <- function(data, k = 10) {
   # Create k equally sized folds
+  set.seed(0)
   folds <- createFolds(data$Attrition_Flag, k = k)
   
   # Initialize lists to store evaluation metrics and variable importance
@@ -494,11 +594,11 @@ cv_boost <- function(data, k = 10) {
     test <- data[folds[[i]], ]
     
     # Train the model on the training set
-    model <- learn.boost(train)
+    model <- learn_boost(train)
     
     # Predict on the testing set
-    predicted <- predict_prime.boost(model, test)
-    predicted_probs <- predict_second.boost(model, test)
+    predicted <- predict_prime_boost(model, test)
+    predicted_probs <- predict_second_boost(model, test)
     
     # Compute evaluation metrics
     accuracy[i] <- sum(predicted == test$Attrition_Flag) / nrow(test)
@@ -580,7 +680,7 @@ cv_boost <- function(data, k = 10) {
 # Learning function
 learn_rf <- function(data) {
   # Logistic regression
-  model <- randomForest(Attrition_Flag ~ ., data = train.bank, ntree = 500,
+  model <- randomForest(Attrition_Flag ~ ., data = data, ntree = 500,
                         seed=123, importance = TRUE)
   return(model)
 }
@@ -620,7 +720,7 @@ assess_rf <- function(model, data) {
   fnr <- confusion_matrix[2, 1] / sum(confusion_matrix[2, ])
   
   # ROC curve and AUC
-  roc <- roc(actual, predict_second(model, data))
+  roc <- roc(actual, predict_second_rf(model, data))
   auc <- auc(roc)
   
   # Dummy classifier ROC curve and AUC
@@ -628,7 +728,7 @@ assess_rf <- function(model, data) {
   dummy_classifier_auc <- auc(dummy_classifier_roc)
   
   # Extract variable importance
-  variable_importance <- importance(bank.rf, type = 2)
+  variable_importance <- importance(model, type = 2)
   
   # Create a data frame for variable names and importance values
   variable_importance_df <- data.frame(
@@ -694,11 +794,11 @@ cv_rf <- function(data, k = 10) {
     test <- data[folds[[i]], ]
     
     # Train the model on the training set
-    model <- learn(train)
+    model <- learn_rf(train)
     
     # Predict on the testing set
-    predicted <- predict_prime(model, test)
-    predicted_probs <- predict_second(model, test)
+    predicted <- predict_prime_rf(model, test)
+    predicted_probs <- predict_second_rf(model, test)
     
     # Positive, negatives and false cases
     p <- sum(predicted == TRUE)

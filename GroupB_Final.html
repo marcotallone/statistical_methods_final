@@ -1738,7 +1738,7 @@ significance of the model.</p>
 <p>In order to assess the model performance, different effectiveness
 metrics have been used. These have been computed both by fitting the
 model using all the observations in the dataset and also by performing a
-k-fold cros validation with <span class="math inline">\(k=10\)</span>.
+k-fold cross validation with <span class="math inline">\(k=10\)</span>.
 The metrics used are the following:</p>
 <ul>
 <li>Accuracy</li>
@@ -1847,8 +1847,6 @@ imbalance:</p>
 <pre><code>## Existing customers (maj class):  8500</code></pre>
 <pre><code>## Proportion of attrited: 16.06596 %</code></pre>
 <p>Let’s apply <em>ROSE</em> package:</p>
-<pre class="r"><code>library(ROSE)</code></pre>
-<pre><code>## Loaded ROSE 0.0-4</code></pre>
 <pre class="r"><code>bank_logistic_balanced&lt;- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data</code></pre>
 <pre class="r"><code>table(bank_logistic_balanced$Attrition_Flag)</code></pre>
 <pre><code>## 
@@ -1909,20 +1907,211 @@ and FNR.</p>
 </div>
 <div id="penalized-regression" class="section level2">
 <h2>Penalized regression</h2>
+<p>From the dataset used for logistic regression we tried to apply both
+ridge and lasso penalizations when estimating the model. As we did for
+the logistic, we implemented a custom function to learn the model, which
+is based on the <code>glmnet</code> library.</p>
 <div id="results-on-the-original-dataset-1" class="section level3">
 <h3>Results on the original dataset</h3>
+<pre class="r"><code>#------------------------------RIDGE MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic,k=10,response = &quot;Attrition_Flag&quot;,lasso=FALSE)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 90.34 +/- 0.64 %
+## ----------------------------------------
+## Average AUC: 91.83 +/- 1.3 %
+## ----------------------------------------
+## Average FPR: 1.82 +/- 0.5 %
+## Average FNR: 83.23 +/- 9.11 %
+## ----------------------------------------</code></pre>
+<pre class="r"><code>#------------------------------LASSO MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic,k=10,response = &quot;Attrition_Flag&quot;,lasso=TRUE)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 91.64 +/- 0.86 %
+## ----------------------------------------
+## Average AUC: 93.58 +/- 0.9 %
+## ----------------------------------------
+## Average FPR: 2.99 +/- 0.64 %
+## Average FNR: 44.86 +/- 6.81 %
+## ----------------------------------------</code></pre>
 </div>
 <div id="results-on-the-synthetic-dataset-rose-1" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>
+<p>Now we build the models on the balanced (synthetic) dataset we used
+for logistic regression:</p>
+<pre class="r"><code>#------------------------------RIDGE MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic_balanced,k=10,response = &quot;Attrition_Flag&quot;,lasso=FALSE)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 81.77 +/- 1.28 %
+## ----------------------------------------
+## Average AUC: 89.72 +/- 0.83 %
+## ----------------------------------------
+## Average FPR: 17.64 +/- 2.31 %
+## Average FNR: 18.88 +/- 2.21 %
+## ----------------------------------------</code></pre>
+<pre class="r"><code>#------------------------------LASSO MODEL--------------------------------------
+cv_penalized_regression(data = bank_logistic_balanced,k=10,response = &quot;Attrition_Flag&quot;,lasso=TRUE)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 82.12 +/- 1.32 %
+## ----------------------------------------
+## Average AUC: 90.08 +/- 0.83 %
+## ----------------------------------------
+## Average FPR: 18.03 +/- 2.73 %
+## Average FNR: 17.82 +/- 2.29 %
+## ----------------------------------------</code></pre>
+<p>As we illustrated for the logistic regression, balancing the dataset
+results in a decreasing of the models accuracy, while the difference
+with respect to the dummy classifier becomes definitely more evident.
+Even though AUC score is now slightly lower than before, the FNR
+improves a lot. For the lasso model it decreases from 44.86% to 17.82%,
+while for the ridge model the enhancement is even more evident: FNR
+decreases from 83.23% to 18.88%.</p>
 </div>
 </div>
 <div id="gamsplines" class="section level2">
 <h2>GAM/Splines</h2>
+<p>We also tried using a General Additive Model to predict the
+Attrition_Flag variable. At first we included all the variables in the
+model, using a spline approximation for all the non categorical
+variables, obtaining an accuracy of 96,42% (AUC 98.99%). Than we removed
+from the model the variables not statistically significant and we
+included as linear variables whose spline approximation has an expected
+degree of freedom minor or equal to 2 obtaining an accuracy of 96,46%
+(AUC 98.92%). The final model has been built using as linear: *
+<code>Customer_Age</code>: customer age in years * <code>Gender</code>:
+the gender of the customer * <code>Dependent_count</code>: number of
+dependents * <code>Marital_Status</code>: married, not married *
+<code>Total_Relationship_Count</code>: the total number of products held
+by the customer * <code>Months_Inactive_12_mon</code>: the number of
+months inactive in the last 12 months *
+<code>Contacts_Count_12_mon</code>: the number of contacts in the last
+12 months * <code>Total_Revolving_Bal</code>: the total revolving
+balance on the credit card * <code>Total_Amt_Chng_Q4_Q1</code>: change
+in transaction amount * <code>Total_Trans_Amt</code>: the total
+transaction amount in the last 12 months * <code>Total_Trans_Ct</code>:
+the total transaction count in the last 12 months *
+<code>Total_Ct_Chng_Q4_Q1</code>: the change in transaction count from
+Q4 to Q1</p>
+<p>As in the logistic regression model we converted
+<code>Months_Inactive_12_mon</code> to a categorical variable with 4
+categories: 1,2,3,4+; and we took the logarithmic values of
+<code>Total_Trans_Amt</code>.</p>
+<p>The assessment has been done using the same procedure as the logistic
+regression model: we performed a k-fold cross validation with k=10, and
+we used the same metrics.</p>
 <div id="results-on-the-original-dataset-2" class="section level3">
 <h3>Results on the original dataset</h3>
+<p>The build gamfit model is:</p>
+<pre class="r"><code>gamfit&lt;-learn_gam(bank_gam)
+summary(gamfit)</code></pre>
+<pre><code>## 
+## Family: binomial 
+## Link function: logit 
+## 
+## Formula:
+## Attrition_Flag ~ s(Customer_Age) + Gender + Dependent_count + 
+##     Marital_Status + Total_Relationship_Count + Months_Inactive_12_mon + 
+##     Contacts_Count_12_mon + s(Total_Revolving_Bal) + s(Total_Amt_Chng_Q4_Q1) + 
+##     s(Total_Trans_Amt) + s(Total_Trans_Ct) + s(Total_Ct_Chng_Q4_Q1)
+## 
+## Parametric coefficients:
+##                          Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)              -3.19297    1.06287  -3.004 0.002664 ** 
+## GenderM                  -0.57718    0.12232  -4.719 2.37e-06 ***
+## Dependent_count           0.04363    0.05698   0.766 0.443850    
+## Marital_StatusMarried    -0.64842    0.12473  -5.199 2.01e-07 ***
+## Total_Relationship_Count -0.47041    0.04381 -10.738  &lt; 2e-16 ***
+## Months_Inactive_12_mon1  -3.77719    0.98680  -3.828 0.000129 ***
+## Months_Inactive_12_mon2  -2.40420    0.97548  -2.465 0.013716 *  
+## Months_Inactive_12_mon3  -1.99950    0.97268  -2.056 0.039815 *  
+## Months_Inactive_12_mon4+ -1.52299    0.98307  -1.549 0.121331    
+## Contacts_Count_12_mon     0.44748    0.05705   7.844 4.37e-15 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Approximate significance of smooth terms:
+##                           edf Ref.df Chi.sq p-value    
+## s(Customer_Age)         7.896  8.180  97.71  &lt;2e-16 ***
+## s(Total_Revolving_Bal)  8.651  8.963 398.04  &lt;2e-16 ***
+## s(Total_Amt_Chng_Q4_Q1) 5.772  6.321 151.49  &lt;2e-16 ***
+## s(Total_Trans_Amt)      8.975  8.999 739.97  &lt;2e-16 ***
+## s(Total_Trans_Ct)       4.564  5.471 468.10  &lt;2e-16 ***
+## s(Total_Ct_Chng_Q4_Q1)  3.336  4.250 108.56  &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## R-sq.(adj) =  0.799   Deviance explained = 78.8%
+## UBRE = -0.80368  Scale est. = 1         n = 10127</code></pre>
+<p>Regarding the effectiveness metrics we obtained:</p>
+<pre class="r"><code>gam_results &lt;- assess_gam(gamfit, bank_gam)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     8354      146
+##   Attrited      212     1415
+## ----------------------------------------
+## Accuracy: 96.46 %
+## Dummy classifier accuracy: 83.93 %
+## ----------------------------------------
+## AUC: 98.92 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 1.72 %
+## FNR: 13.03 %
+## ----------------------------------------
+## AIC: 1988.168 
+## BIC: 2343.498 
+## ----------------------------------------</code></pre>
+<p>And similar results for the k-fold cross validation:</p>
+<pre class="r"><code>cv_gam(bank_gam)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 96.19 +/- 0.48 %
+## ----------------------------------------
+## Average AUC: 98.79 +/- 0.33 %
+## ----------------------------------------
+## Average FPR: 1.84 +/- 0.45 %
+## Average FNR: 14.62 +/- 2.66 %
+## ----------------------------------------
+## Average AIC: 1793.549 +/- 29.69185 
+## Average BIC: 2141.763 +/- 30.65175 
+## ----------------------------------------</code></pre>
 </div>
 <div id="results-on-the-synthetic-dataset-rose-2" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>
+<p>First of all, let’s obtain the synthetic dataset:</p>
+<pre class="r"><code>bank_gam_balanced&lt;- ROSE(Attrition_Flag~.,data=bank_gam,seed = 123)$data</code></pre>
+<p>Learning phase of the model:</p>
+<pre class="r"><code>ROSE_gamfit&lt;-learn_gam(bank_gam_balanced)</code></pre>
+<pre class="r"><code>ROSE_gam_results&lt;- assess_gam(ROSE_gamfit, bank_gam_balanced)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     4281      842
+##   Attrited      719     4285
+## ----------------------------------------
+## Accuracy: 84.59 %
+## Dummy classifier accuracy: 50.59 %
+## ----------------------------------------
+## AUC: 92.68 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 16.44 %
+## FNR: 14.37 %
+## ----------------------------------------
+## AIC: 7077.008 
+## BIC: 7424.874 
+## ----------------------------------------</code></pre>
+<pre class="r"><code>cv_gam(bank_gam_balanced)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 84.48 +/- 0.91 %
+## ----------------------------------------
+## Average AUC: 92.42 +/- 0.59 %
+## ----------------------------------------
+## Average FPR: 17.22 +/- 2.13 %
+## Average FNR: 13.99 +/- 1.9 %
+## ----------------------------------------
+## Average AIC: 6374.313 +/- 29.03024 
+## Average BIC: 6708.757 +/- 28.87275 
+## ----------------------------------------</code></pre>
 </div>
 </div>
 <div id="decision-trees" class="section level2">
@@ -1930,8 +2119,178 @@ and FNR.</p>
 </div>
 <div id="ensemble-methods" class="section level2">
 <h2>Ensemble Methods</h2>
+<p>The last class of methods we used to model the
+<code>Attrition_Flag</code> variable is ensamble methods, in particular
+we focussed on AdaBoost and Random Forest.<br />
+The first model we built is an AdaBoost model on the whole dataset,
+which on its own achieved some great results. Then we proceeded by
+removing the variables considered not statistically significant in more
+complex models like <code>GAM</code>. This slight modification didn’t
+much modify the accuracy of the model, which is always on the order of
+about <span class="math inline">\(\sim90\%\)</span>.<br />
+The final model has been built using the following variables:</p>
+<ul>
+<li><code>Gender</code>: the gender of the customer</li>
+<li><code>Total_Relationship_Count</code>: the total number of products
+held by the customer</li>
+<li><code>Months_Inactive_12_mon</code>: the number of months inactive
+in the last 12 months</li>
+<li><code>Contacts_Count_12_mon</code>: the number of contacts in the
+last 12 months</li>
+<li><code>Total_Revolving_Bal</code>: the total revolving balance on the
+credit card</li>
+<li><code>Total_Trans_Amt</code>: the total transaction amount in the
+last 12 months</li>
+<li><code>Total_Trans_Ct</code>: the total transaction count in the last
+12 months</li>
+<li><code>Total_Ct_Chng_Q4_Q1</code>: the change in transaction count
+from Q4 to Q1</li>
+<li><code>Marital_Status</code>: the marital status of the customer</li>
+<li><code>Income_Category</code>: the income category of the
+customer</li>
+</ul>
+<p>The same pre-processing steps of the <code>GLM</code> model were
+performed, slightly modifying classes or taking logarithmic values and
+converting the <code>Months_Inactive_12_mon</code> variable to a
+factor.<br />
+The effectiveness metrics used to assess the model are:</p>
+<ul>
+<li>Accuracy</li>
+<li>AUC</li>
+<li>FPR (False Positive Rate)</li>
+<li>FNR (False Negative Rate)</li>
+<li>Confusion matrix</li>
+<li>Variable importance</li>
+</ul>
+<p>The dummy classifier has been taken as a baseline for comparison.</p>
+<p>Learning phase:</p>
+<pre class="r"><code>boost_model &lt;- learn_boost(train_bank_ensamble)
+rf_model &lt;- learn_rf(train_bank_ensamble)</code></pre>
 <div id="results-on-the-original-dataset-3" class="section level3">
 <h3>Results on the original dataset</h3>
+<p>A summary-like output of the model doesn’t exist, but we can still
+assess the model performance using the metrics described above.</p>
+<p>First we show the results relative to a single run of the model on
+the dataset:</p>
+<pre class="r"><code>boost_results &lt;- assess_boost(boost_model, test_bank_ensamble)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     1673       27
+##   Attrited       55      270
+## ----------------------------------------
+## Accuracy: 95.95 %
+## Dummy classifier accuracy: 83.95 %
+## ----------------------------------------
+## AUC: 98.4 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 1.59 %
+## FNR: 16.92 %
+## ----------------------------------------
+## Variable importance:
+##                    Variable Mean_Gini_Decrease
+## 1            Total_Trans_Ct         32.1290080
+## 2           Total_Trans_Amt         28.0619350
+## 3       Total_Ct_Chng_Q4_Q1         11.6521977
+## 4       Total_Revolving_Bal         11.4968680
+## 5  Total_Relationship_Count          6.9770316
+## 6     Contacts_Count_12_mon          3.9556203
+## 7    Months_Inactive_12_mon          3.6111736
+## 8                    Gender          0.8720491
+## 9            Marital_Status          0.8677845
+## 10          Income_Category          0.3763321
+## ----------------------------------------</code></pre>
+<p>Then the results on a 10-fold cross validation:</p>
+<pre class="r"><code>cv_boost_results &lt;- cv_boost(bank_ensamble)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 95.8 +/- 0.62 %
+## ----------------------------------------
+## Average AUC: 98.58 +/- 0.33 %
+## ----------------------------------------
+## Average FPR: 2.14 +/- 0.52 %
+## Average FNR: 14.94 +/- 3.76 %
+## ----------------------------------------
+## Average variable importance ranking:
+##                    Variable Mean_Gini_Decrease   Std_Dev
+## 1            Total_Trans_Ct         34.4238144 1.3462097
+## 2           Total_Trans_Amt         27.5899608 1.1064890
+## 3       Total_Revolving_Bal         12.3707367 0.5727565
+## 4       Total_Ct_Chng_Q4_Q1         10.4054774 0.5674450
+## 5  Total_Relationship_Count          6.9797462 0.4778131
+## 6     Contacts_Count_12_mon          3.7719677 0.3688566
+## 7    Months_Inactive_12_mon          2.7936159 0.4302681
+## 8            Marital_Status          0.8467934 0.2544696
+## 9                    Gender          0.5970740 0.1421272
+## 10          Income_Category          0.2208136 0.1068953
+## ----------------------------------------</code></pre>
+<p>As we can see from these results, AdaBoost is performing pretty well,
+having a consistent accuracy of over <span class="math inline">\(90\%\)</span> and a good AUC score. The FPR and
+FNR are also very low, keeping them consistently under <span class="math inline">\(20\%\)</span>. Not having an AIC or BIC-like
+score, we can’t really compare the model to the previous ones, but the
+results on classification are much better than the ones above, in
+particular with respect to the simple logistic regression.<br />
+</p>
+<p>Passing to Random Forest, we perform the same analysis:</p>
+<pre class="r"><code>rf_results &lt;- assess_rf(rf_model, test_bank_ensamble)</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing     1676       24
+##   Attrited       65      260
+## ----------------------------------------
+## Accuracy: 95.6 %
+## Dummy classifier accuracy: 83.95 %
+## ----------------------------------------
+## AUC: 98.14 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 1.41 %
+## FNR: 20 %
+## ----------------------------------------
+## Variable importance:
+##                    Variable Mean_Gini_Decrease
+## 8           Total_Trans_Amt         529.807126
+## 9            Total_Trans_Ct         485.608407
+## 7       Total_Revolving_Bal         393.019449
+## 10      Total_Ct_Chng_Q4_Q1         318.191270
+## 4  Total_Relationship_Count         205.084791
+## 6     Contacts_Count_12_mon          90.515870
+## 5    Months_Inactive_12_mon          85.966817
+## 1                    Gender          35.993873
+## 2            Marital_Status          23.708807
+## 3           Income_Category           8.235691
+## ----------------------------------------</code></pre>
+<pre class="r"><code>cv_rf_results &lt;- cv_rf(bank_ensamble)</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 95.88 +/- 0.6 %
+## ----------------------------------------
+## Average AUC: 98.53 +/- 0.39 %
+## ----------------------------------------
+## Average FPR: 1.65 +/- 0.39 %
+## Average FNR: 18.63 +/- 5.07 %
+## ----------------------------------------
+## Average variable importance ranking:
+##                    Variable Mean_Gini_Decrease    Std_Dev
+## 1           Total_Trans_Amt         594.260721  1.2329108
+## 2            Total_Trans_Ct         547.113190  0.7216613
+## 3       Total_Revolving_Bal         417.708629  0.3330579
+## 4       Total_Ct_Chng_Q4_Q1         381.125419  6.4603938
+## 5  Total_Relationship_Count         229.326038  2.3368698
+## 6     Contacts_Count_12_mon         100.106859  1.8307071
+## 7    Months_Inactive_12_mon          95.318035  6.7189635
+## 8                    Gender          41.048829  8.6463686
+## 9            Marital_Status          28.676287 10.6508919
+## 10          Income_Category           8.953285  5.7820735
+## ----------------------------------------</code></pre>
+<p>The results are very similar to the ones of AdaBoost, with the only
+difference being a slightly lower accuracy and AUC score. The FPR and
+FNR are also very low, keeping them consistently under <span class="math inline">\(20\%\)</span>. A consistent note should be pointed
+that on the fact that performing cross validation, the average FNR
+decreases to below <span class="math inline">\(5\%\)</span>,
+demonstrating the adaptive power of Random Forest also on unbalanced
+data.<br />
+</p>
 </div>
 <div id="results-on-the-synthetic-dataset-rose-3" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>
