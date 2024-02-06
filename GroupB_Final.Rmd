@@ -205,8 +205,98 @@ cv_logistic(bank_logistic_balanced)
 ### Results on the original dataset
 ### Results on the synthetic dataset (ROSE)
 
+
 ## GAM/Splines
+We also tried using a General Additive Model to predict the Attrition_Flag variable. At first we included all the variables in the model, using a spline approximation for all the non categorical variable, obtaining an accuracy of 96,42% (AUC 98.99%). 
+Than we removed from the model the variables not statistically significant and we included as linear variables whose spline approximation has an expected degree of freedom minor or equal to 2 obtaining an accuracy of 96,46% (AUC 98.92%). 
+The final model has been built using as linear:
+* `Customer_Age`: customer age in years
+* `Gender`: the gender of the customer
+* `Dependent_count`: number of dependents
+* `Marital_Status`: married, not married
+* `Total_Relationship_Count`: the total number of products held by the customer
+* `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
+* `Contacts_Count_12_mon`: the number of contacts in the last 12 months
+* `Total_Revolving_Bal`: the total revolving balance on the credit card
+* `Total_Amt_Chng_Q4_Q1`: change in transaction amount
+* `Total_Trans_Amt`: the total transaction amount in the last 12 months
+* `Total_Trans_Ct`: the total transaction count in the last 12 months
+* `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
+
+As in the logistic regression model we converted `Months_Inactive_12_mon` to a categorical variable with 4 categories: 1,2,3,4+; and we took the logarithmic values of `Total_Trans_Amt`.
+
+The assessment has been done using the same procedure as the logistic regression model: we performed a k-fold cross validation with k=10, and we used the same metrics.
+
+```{r gam_model_build, echo=FALSE}
+# Set working directory as this directory
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
+# Load the dataset and pre-process it
+bank_gam <- read.csv("./datasets/BankChurners.csv", sep = ",")
+
+# ⚠️ Remove the last two columns as suggested in the README
+bank_gam <- bank_gam[, -c(22, 23)]
+
+# ⚠️ Remove the first column as it is just an index
+bank_gam <- bank_gam[, -1]
+
+# ⚠️ Convert the Attrition_Flag column to a binary variable:
+# - 0: Existing Customer
+# - 1: Attrited Customer
+bank_gam$Attrition_Flag <- ifelse(bank_gam$Attrition_Flag == "Attrited Customer", 1, 0)
+
+# Convert all categorical variables to factors
+bank_gam$Gender <- as.factor(bank_gam$Gender)
+
+bank_gam$Income_Category <- fct_collapse(bank_gam$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
+# Chnanging the levels of Marital_Status in either married or not married
+bank_gam$Marital_Status <- fct_collapse(bank_gam$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+# Converting Months_Inactive_12_mon to a factor
+bank_gam$Months_Inactive_12_mon <- as.factor(bank_gam$Months_Inactive_12_mon)
+levels(bank_gam$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
+
+# Joining together the levels after 4 months
+bank_gam$Months_Inactive_12_mon <- fct_collapse(bank_gam$Months_Inactive_12_mon,
+                                            "4+" = c("4", "5", "6+"))
+
+bank_gam$Education_Level <- as.factor(bank_gam$Education_Level)
+bank_gam$Marital_Status <- as.factor(bank_gam$Marital_Status)
+bank_gam$Income_Category <- as.factor(bank_gam$Income_Category)
+bank_gam$Card_Category <- as.factor(bank_gam$Card_Category)
+bank_gam$Total_Trans_Amt <- log(bank_gam$Total_Trans_Amt)
+
+gamfit<-learn_gam(bank_gam)
+```
+
 ### Results on the original dataset
+
+The build gamfit model is:
+
+```{r gam_model_summary}
+summary(gamfit)
+```
+Regarding the effectiveness metrics we obtained:
+
+```{r gam model_results, message=FALSE, warning=FALSE}
+gam_results <- assess_gam(gamfit, bank_gam)
+```
+And similar results for the k-fold cross validation:
+
+```{r gam_model_cv_results, message=FALSE, warning=FALSE}
+cv_gam(bank_gam)
+```
+
 ### Results on the synthetic dataset (ROSE)
 
 ## Decision Trees ?
