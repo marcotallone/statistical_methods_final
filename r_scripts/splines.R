@@ -66,27 +66,44 @@ bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 # Learning function: f'_learn
 learn <- function(data) {
   #spline with gam
-            model<-gam(Attrition_Flag ~ s(Customer_Age)+Gender
+            model<-gam(Attrition_Flag ~ s(Customer_Age)
+                       +Gender
                        +Dependent_count
-            +Education_Level+Marital_Status
-            +Income_Category+Card_Category+Months_on_book 
-            +Total_Relationship_Count+Months_Inactive_12_mon
-            +Contacts_Count_12_mon+Credit_Limit+s(Total_Revolving_Bal)
-            +Avg_Open_To_Buy+s(Total_Amt_Chng_Q4_Q1)
-            +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1)
-            +s(Avg_Utilization_Ratio), data=bank)
+                       +Education_Level
+                       +Marital_Status
+                       +Income_Category
+                       +Card_Category
+                       +s(Months_on_book )
+                       +Total_Relationship_Count
+                       +Months_Inactive_12_mon
+                       +Contacts_Count_12_mon
+                       +s(Credit_Limit)
+                       +s(Total_Revolving_Bal)
+                       +s(Avg_Open_To_Buy)
+                       +s(Total_Amt_Chng_Q4_Q1)
+                       +s(Total_Trans_Amt)
+                       +s(Total_Trans_Ct)
+                       +s(Total_Ct_Chng_Q4_Q1)
+                       +s(Avg_Utilization_Ratio), family = binomial(link = "logit"),data=bank)
             return(model)
 }
 
 # Learning function: f'_learn using the dataset as: bank <- bank[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
 learn_less_vars <- function(data) {
   #spline with gam
-  model<-gam(Attrition_Flag ~ Gender
-             +Marital_Status
-             +Income_Category
-             +Total_Relationship_Count+Months_Inactive_12_mon
-             +Contacts_Count_12_mon+s(Total_Revolving_Bal)
-             +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1), data=bank)
+  model<-gam(Attrition_Flag ~ s(Customer_Age)
+             +Gender
+             +Dependent_count
+             +Marital_Status 
+             +Total_Relationship_Count
+             +Months_Inactive_12_mon
+             +Contacts_Count_12_mon
+             +s(Total_Revolving_Bal)
+             +s(Total_Amt_Chng_Q4_Q1)
+             +s(Total_Trans_Amt)
+             +s(Total_Trans_Ct)
+             +s(Total_Ct_Chng_Q4_Q1)
+             ,family = binomial(link = "logit"), data=bank)
   return(model)
 }
 
@@ -260,35 +277,43 @@ cv <- function(data, k = 10, flag) {
 
 ##MODELS---------------------------------------------------------------
 #considering all the variables
-gamfit_first_try<-gam(Attrition_Flag ~ s(Customer_Age)+Gender+Dependent_count
-            +Education_Level+Marital_Status
-            +Income_Category+Card_Category+s(Months_on_book )
-            +Total_Relationship_Count+Months_Inactive_12_mon
-            +Contacts_Count_12_mon+s(Credit_Limit)+s(Total_Revolving_Bal)
-            +s(Avg_Open_To_Buy)+s(Total_Amt_Chng_Q4_Q1)
-            +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1)
-            +s(Avg_Utilization_Ratio), data=bank)
-summary(gamfit_first_try)
-
-#considering edf in the summary I change as additive the variables that has edf<2
-gamfit<-gam(Attrition_Flag ~ s(Customer_Age)+Gender+Dependent_count
-            +Education_Level+Marital_Status
-            +Income_Category+Card_Category+Months_on_book 
-            +Total_Relationship_Count+Months_Inactive_12_mon
-            +Contacts_Count_12_mon+Credit_Limit+s(Total_Revolving_Bal)
-            +Avg_Open_To_Buy+s(Total_Amt_Chng_Q4_Q1)
-            +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1)
-            +s(Avg_Utilization_Ratio), data=bank)
+gamfit<-gam(Attrition_Flag ~ s(Customer_Age)
+            +Gender
+            +Dependent_count
+            +Education_Level
+            +Marital_Status
+            +Income_Category
+            +Card_Category
+            +s(Months_on_book )
+            +Total_Relationship_Count
+            +Months_Inactive_12_mon
+            +Contacts_Count_12_mon
+            +s(Credit_Limit)
+            +s(Total_Revolving_Bal)
+            +s(Avg_Open_To_Buy)
+            +s(Total_Amt_Chng_Q4_Q1)
+            +s(Total_Trans_Amt)
+            +s(Total_Trans_Ct)
+            +s(Total_Ct_Chng_Q4_Q1)
+            +s(Avg_Utilization_Ratio), family = binomial(link = "logit"),data=bank)
 summary(gamfit)
 
-#considering less variables
-gamfit_less_vars<-gam(Attrition_Flag ~ Gender
-                      +Marital_Status
-                      +Income_Category
-                      +Total_Relationship_Count+Months_Inactive_12_mon
-                      +Contacts_Count_12_mon+s(Total_Revolving_Bal)
-                      +s(Total_Trans_Amt)+s(Total_Trans_Ct)+s(Total_Ct_Chng_Q4_Q1), data=bank)
+
+gamfit_less_vars<-gam(Attrition_Flag ~ s(Customer_Age)
+                      +Gender
+                      +Dependent_count
+                      +Marital_Status 
+                      +Total_Relationship_Count
+                      +Months_Inactive_12_mon
+                      +Contacts_Count_12_mon
+                      +s(Total_Revolving_Bal)
+                      +s(Total_Amt_Chng_Q4_Q1)
+                      +s(Total_Trans_Amt)
+                      +s(Total_Trans_Ct)
+                      +s(Total_Ct_Chng_Q4_Q1)
+                      ,family = binomial(link = "logit"), data=bank)
 summary(gamfit_less_vars)
+
 ##ASSESSING--------------------------------------------------------
 
 
