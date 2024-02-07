@@ -2294,6 +2294,290 @@ data.<br />
 </div>
 <div id="results-on-the-synthetic-dataset-rose-3" class="section level3">
 <h3>Results on the synthetic dataset (ROSE)</h3>
+<p>From <code>bank_ensamble</code> let’s obtain a new (synthetic)
+dataset:</p>
+<pre class="r"><code>bank_ensamble_balanced&lt;- ROSE(Attrition_Flag~.,data=bank_ensamble,seed = 123)$data</code></pre>
+<p>It is now splitted into a training and test set (to be consistent, we
+use the same seed used before)</p>
+<pre class="r"><code>set.seed(1234)
+index &lt;- createDataPartition(bank_ensamble_balanced$Attrition_Flag , p =0.8, list = FALSE)
+train_bank_ensamble_balanced &lt;- bank_ensamble_balanced[index,]
+test_bank_ensamble_balanced &lt;- bank_ensamble_balanced[-index,]</code></pre>
+<p>Learning phase:</p>
+<pre class="r"><code>ROSE_boost_model &lt;- learn_boost(train_bank_ensamble_balanced)
+ROSE_rf_model &lt;- learn_rf(train_bank_ensamble_balanced)</code></pre>
+<p>Assessment with static train/test division:</p>
+<pre class="r"><code>assess_boost(ROSE_boost_model, test_bank_ensamble_balanced)</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing      909      115
+##   Attrited      125      875
+## ----------------------------------------
+## Accuracy: 88.14 %
+## Dummy classifier accuracy: 50.59 %
+## ----------------------------------------
+## AUC: 95.05 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 11.23 %
+## FNR: 12.5 %
+## ----------------------------------------
+## Variable importance:
+##                    Variable Mean_Gini_Decrease
+## 1            Total_Trans_Ct         37.6403899
+## 2       Total_Revolving_Bal         16.4268728
+## 3           Total_Trans_Amt         14.3267798
+## 4       Total_Ct_Chng_Q4_Q1         10.2729640
+## 5  Total_Relationship_Count          8.1545128
+## 6     Contacts_Count_12_mon          5.2552011
+## 7    Months_Inactive_12_mon          5.1071983
+## 8                    Gender          2.2144963
+## 9            Marital_Status          0.4120053
+## 10          Income_Category          0.1895795
+## ----------------------------------------</code></pre>
+<pre><code>## $confusion_matrix
+##           Predicted
+## Actual     Existing Attrited
+##   Existing      909      115
+##   Attrited      125      875
+## 
+## $accuracy
+## [1] 0.8814229
+## 
+## $dummy_classifier_accuracy
+## [1] 0.5059289
+## 
+## $auc
+## Area under the curve: 0.9505
+## 
+## $dummy_classifier_auc
+## Area under the curve: 0.5
+## 
+## $fpr
+## [1] 0.1123047
+## 
+## $fnr
+## [1] 0.125
+## 
+## $variable_importance
+##                    Variable Mean_Gini_Decrease
+## 1            Total_Trans_Ct         37.6403899
+## 2       Total_Revolving_Bal         16.4268728
+## 3           Total_Trans_Amt         14.3267798
+## 4       Total_Ct_Chng_Q4_Q1         10.2729640
+## 5  Total_Relationship_Count          8.1545128
+## 6     Contacts_Count_12_mon          5.2552011
+## 7    Months_Inactive_12_mon          5.1071983
+## 8                    Gender          2.2144963
+## 9            Marital_Status          0.4120053
+## 10          Income_Category          0.1895795</code></pre>
+<pre class="r"><code>assess_rf(ROSE_rf_model, test_bank_ensamble_balanced)</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## ----------------------------------------
+##           Predicted
+## Actual     Existing Attrited
+##   Existing      914      110
+##   Attrited      114      886
+## ----------------------------------------
+## Accuracy: 88.93 %
+## Dummy classifier accuracy: 50.59 %
+## ----------------------------------------
+## AUC: 95.16 %
+## Dummy classifier AUC: 50 %
+## ----------------------------------------
+## FPR: 10.74 %
+## FNR: 11.4 %
+## ----------------------------------------
+## Variable importance:
+##                    Variable Mean_Gini_Decrease
+## 9            Total_Trans_Ct         1128.96533
+## 7       Total_Revolving_Bal          716.12825
+## 10      Total_Ct_Chng_Q4_Q1          582.52131
+## 8           Total_Trans_Amt          569.04631
+## 4  Total_Relationship_Count          410.95159
+## 6     Contacts_Count_12_mon          304.87890
+## 5    Months_Inactive_12_mon          198.64647
+## 1                    Gender           75.76350
+## 2            Marital_Status           39.82138
+## 3           Income_Category           17.30200
+## ----------------------------------------</code></pre>
+<pre><code>## $confusion_matrix
+##           Predicted
+## Actual     Existing Attrited
+##   Existing      914      110
+##   Attrited      114      886
+## 
+## $accuracy
+## [1] 0.8893281
+## 
+## $dummy_classifier_accuracy
+## [1] 0.5059289
+## 
+## $auc
+## Area under the curve: 0.9516
+## 
+## $dummy_classifier_auc
+## Area under the curve: 0.5
+## 
+## $fpr
+## [1] 0.1074219
+## 
+## $fnr
+## [1] 0.114
+## 
+## $variable_importance
+##                    Variable Mean_Gini_Decrease
+## 9            Total_Trans_Ct         1128.96533
+## 7       Total_Revolving_Bal          716.12825
+## 10      Total_Ct_Chng_Q4_Q1          582.52131
+## 8           Total_Trans_Amt          569.04631
+## 4  Total_Relationship_Count          410.95159
+## 6     Contacts_Count_12_mon          304.87890
+## 5    Months_Inactive_12_mon          198.64647
+## 1                    Gender           75.76350
+## 2            Marital_Status           39.82138
+## 3           Income_Category           17.30200</code></pre>
+<p>Assessment with 10-fold cross validation:</p>
+<pre class="r"><code>cv_boost(bank_ensamble_balanced)</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 88.29 +/- 0.75 %
+## ----------------------------------------
+## Average AUC: 95.17 +/- 0.62 %
+## ----------------------------------------
+## Average FPR: 12.1 +/- 1.79 %
+## Average FNR: 11.31 +/- 1.31 %
+## ----------------------------------------
+## Average variable importance ranking:
+##                    Variable Mean_Gini_Decrease    Std_Dev
+## 1            Total_Trans_Ct        43.40710960 1.73955820
+## 2       Total_Revolving_Bal        15.58571936 0.84827820
+## 3           Total_Trans_Amt        12.51666409 0.85500979
+## 4  Total_Relationship_Count         9.23701706 0.55708039
+## 5       Total_Ct_Chng_Q4_Q1         8.30573006 0.54036127
+## 6    Months_Inactive_12_mon         4.72837157 0.41733906
+## 7     Contacts_Count_12_mon         4.21194321 0.35294187
+## 8                    Gender         1.69962154 0.29090438
+## 9            Marital_Status         0.22237409 0.06810999
+## 10          Income_Category         0.08544943 0.04295257
+## ----------------------------------------</code></pre>
+<pre><code>## $accuracy
+## [1] 0.8828894
+## 
+## $auc
+## [1] 0.9516959
+## 
+## $fpr
+## [1] 0.1210123
+## 
+## $fnr
+## [1] 0.113109
+## 
+## $variable_importance
+##                    Variable Mean_Gini_Decrease    Std_Dev
+## 1            Total_Trans_Ct        43.40710960 1.73955820
+## 2       Total_Revolving_Bal        15.58571936 0.84827820
+## 3           Total_Trans_Amt        12.51666409 0.85500979
+## 4  Total_Relationship_Count         9.23701706 0.55708039
+## 5       Total_Ct_Chng_Q4_Q1         8.30573006 0.54036127
+## 6    Months_Inactive_12_mon         4.72837157 0.41733906
+## 7     Contacts_Count_12_mon         4.21194321 0.35294187
+## 8                    Gender         1.69962154 0.29090438
+## 9            Marital_Status         0.22237409 0.06810999
+## 10          Income_Category         0.08544943 0.04295257</code></pre>
+<pre class="r"><code>cv_rf(bank_ensamble_balanced)</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## Setting levels: control = FALSE, case = TRUE</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre><code>## ----------------------------------------
+## Average accuracy: 88.7 +/- 1.06 %
+## ----------------------------------------
+## Average AUC: 95.22 +/- 0.68 %
+## ----------------------------------------
+## Average FPR: 11.64 +/- 1.55 %
+## Average FNR: 10.98 +/- 1.49 %
+## ----------------------------------------
+## Average variable importance ranking:
+##                    Variable Mean_Gini_Decrease    Std_Dev
+## 1            Total_Trans_Ct         1284.98064  2.9413457
+## 2       Total_Revolving_Bal          798.58666  0.9267807
+## 3       Total_Ct_Chng_Q4_Q1          654.72786  0.5683626
+## 4           Total_Trans_Amt          648.81875  4.3651613
+## 5  Total_Relationship_Count          448.64834  6.3442106
+## 6     Contacts_Count_12_mon          343.65904  6.8771990
+## 7    Months_Inactive_12_mon          221.61611 12.3352178
+## 8                    Gender           83.57163  4.8320908
+## 9            Marital_Status           44.55261 12.5320615
+## 10          Income_Category           18.70678 13.3440374
+## ----------------------------------------</code></pre>
+<pre><code>## $accuracy
+## [1] 0.8870356
+## 
+## $auc
+## [1] 0.9522324
+## 
+## $fpr
+## [1] 0.1164049
+## 
+## $fnr
+## [1] 0.1098467
+## 
+## $variable_importance
+##                    Variable Mean_Gini_Decrease    Std_Dev
+## 1            Total_Trans_Ct         1284.98064  2.9413457
+## 2       Total_Revolving_Bal          798.58666  0.9267807
+## 3       Total_Ct_Chng_Q4_Q1          654.72786  0.5683626
+## 4           Total_Trans_Amt          648.81875  4.3651613
+## 5  Total_Relationship_Count          448.64834  6.3442106
+## 6     Contacts_Count_12_mon          343.65904  6.8771990
+## 7    Months_Inactive_12_mon          221.61611 12.3352178
+## 8                    Gender           83.57163  4.8320908
+## 9            Marital_Status           44.55261 12.5320615
+## 10          Income_Category           18.70678 13.3440374</code></pre>
 </div>
 </div>
 </div>

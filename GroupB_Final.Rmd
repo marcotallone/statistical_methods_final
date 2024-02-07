@@ -465,7 +465,46 @@ The results are very similar to the ones of AdaBoost, with the only difference b
 
 ### Results on the synthetic dataset (ROSE)
 
+From `bank_ensamble` let's obtain a new (synthetic) dataset:
+
+```{r,message=FALSE,warning=FALSE}
+bank_ensamble_balanced<- ROSE(Attrition_Flag~.,data=bank_ensamble,seed = 123)$data
+```
+
+It is now splitted into a training and test set (to be consistent, we use the same seed used before)
+```{r,message=FALSE,warning=FALSE}
+set.seed(1234)
+index <- createDataPartition(bank_ensamble_balanced$Attrition_Flag , p =0.8, list = FALSE)
+train_bank_ensamble_balanced <- bank_ensamble_balanced[index,]
+test_bank_ensamble_balanced <- bank_ensamble_balanced[-index,]
+```
+
+Learning phase:
+```{r,message=FALSE,warning=FALSE}
+ROSE_boost_model <- learn_boost(train_bank_ensamble_balanced)
+ROSE_rf_model <- learn_rf(train_bank_ensamble_balanced)
+```
+
+Assessment with static train/test division:
+
+```{r,message=FALSE,warning=FALSE}
+assess_boost(ROSE_boost_model, test_bank_ensamble_balanced)
+```
+
+```{r,message=FALSE,warning=FALSE}
+assess_rf(ROSE_rf_model, test_bank_ensamble_balanced)
+```
     
-    
+
+Assessment with 10-fold cross validation:
+
+```{r,message=FALSE,warning=FALSE}
+cv_boost(bank_ensamble_balanced)
+```
+
+```{r,message=FALSE,warning=FALSE}
+cv_rf(bank_ensamble_balanced)
+```
+  
 # Interpretations/Conclusions
 
