@@ -3,13 +3,14 @@ library(car)
 library(caret)
 library(pROC)
 library(forcats)
+library(ggplot2)
 
 # FUNCTIONS --------------------------------------------------------------------
 
 # Learning function: f'_learn
 learn <- function(data) {
   # Logistic regression
-  model <- glm(Attrition_Flag ~ .,
+  model <- glm(Attrition_Flag ~ . - Total_Trans_Amt,
                data = data,
                family = binomial(link = "logit"))
   return(model)
@@ -53,6 +54,10 @@ assess <- function(model, data) {
   # ROC curve and AUC
   roc <- roc(actual, predict_second(model, data))
   auc <- auc(roc)
+
+  # # Plot ROC curve
+  # plot(roc, main = "ROC Curve")
+  # abline(0, 1, lty = 2)  # Add diagonal line
 
   # Dummy classifier ROC curve and AUC
   dummy_classifier_roc <- roc(actual, rep(0, length(actual)))
@@ -203,6 +208,29 @@ bank$Income_Category <- forcats::fct_relevel(bank$Income_Category,
                                              "$80K - $120K",
                                              "$120K +")
 
+# Changing the levels of income category into a binary variable:
+bank$Income_Category <- fct_collapse(bank$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
+# Chnanging the levels of Marital_Status in either married or not married
+bank$Marital_Status <- fct_collapse(bank$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+
+# Converting the Months_Inactive_12_mon to a factor, reorddering and
+# joining together the levels after 4+ months
+# bank$Months_Inactive_12_mon <- as.factor(bank$Months_Inactive_12_mon)
+# levels(bank$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
+# bank$Months_Inactive_12_mon <- fct_collapse(bank$Months_Inactive_12_mon,
+                                            # "4+" = c("4", "5", "6+"))
+
 # Override the Total_Trans_Amt variable with its log !!!
 bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
 
@@ -227,68 +255,8 @@ cv(bank)
 anova(bank_logistic, test = "Chisq")
 vif(bank_logistic)
 
-# ------------------------------------------------------------------------------
-# MODIFIED DATASET -------------------------------------------------------------
+# PROBIT LINK FUNCTION --------------------------------------------------------
 
-# # Chenaging the levels of Income_Category in less than 80K or more than 80K
-# bank$Income_Category <- fct_collapse(bank$Income_Category,
-#                                      "Less than 80K" = c("Less than $40K",
-#                                                          "$40K - $60K",
-#                                                          "$60K - $80K"),
-#                                      "More than 80K" = c("$80K - $120K",
-#                                                          "$120K +"))
-
-# Changing the levels of income category into a binary variable:
-bank$Income_Category <- fct_collapse(bank$Income_Category,
-                                     "Less than 120K" = c("Unknown",
-                                                          "Less than $40K",
-                                                          "$40K - $60K",
-                                                          "$60K - $80K",
-                                                          "$80K - $120K"),
-                                     "More than 120K" = c("$120K +"))
-
-# Chnanging the levels of Marital_Status in either married or not married
-bank$Marital_Status <- fct_collapse(bank$Marital_Status,
-                                    "Married" = c("Married"),
-                                    "Not Married" = c("Divorced",
-                                                      "Single",
-                                                      "Unknown"))
-
-# Converting Months_Inactive_12_mon to a factor
-bank$Months_Inactive_12_mon <- as.factor(bank$Months_Inactive_12_mon)
-levels(bank$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
-
-# Joining toghether the levels after 4 months
-bank$Months_Inactive_12_mon <- fct_collapse(bank$Months_Inactive_12_mon,
-                                            "4+" = c("4", "5", "6+"))
-
-# # Converting Contacts_Count_12_mon to a factor
-# bank$Contacts_Count_12_mon <- as.factor(bank$Contacts_Count_12_mon)
-# levels(bank$Contacts_Count_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
-
-# # Joining toghether the levels after 4 contacts
-# bank$Contacts_Count_12_mon <- fct_collapse(bank$Contacts_Count_12_mon,
-#                                            "4+" = c("4", "5", "6+"))
-
-# Removing from the dataset the Marital_Status and Income_Category variables
-bank <- bank[, -c(3, 4)]
-
-# Rebuiding and checking the model
-bank_logistic <- learn(bank)
-summary(bank_logistic)
-anova(bank_logistic, test = "Chisq")
-vif(bank_logistic)
-
-# Assessing the model
-cat("Results on whole dataset:\n")
-results <- assess(bank_logistic, bank)
-
-cat("Results on 10-fold cross validation:\n")
-cv(bank)
-
-# ------------------------------------------------------------------------------
-
-# # Attempt using the probit link function
 # bank_logistic <- glm(Attrition_Flag ~ .,
 # 					           data = bank,
 # 					           family = binomial(link = "probit"))

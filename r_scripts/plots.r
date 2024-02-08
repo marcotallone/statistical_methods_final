@@ -236,8 +236,11 @@ ggsave("../plots/correlation_matrix.png", width = 10, height = 10)
 
 # Plots from correlation analysis
 
+# Override the Total_Trans_Amt with its log
+# bank$Total_Trans_Amt <- log(bank$Total_Trans_Amt)
+
 # Plot of Total_Trans_Ct vs Total_Trans_Amt
-ggplot(bank, aes(x = Total_Trans_Amt, y = Total_Trans_Ct, color = as.factor(Attrition_Flag))) +
+ggplot(bank, aes(x = log(Total_Trans_Amt), y = Total_Trans_Ct, color = as.factor(Attrition_Flag))) +
   geom_point(alpha = .5) +
   scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733"),
                      name = "Attrition Flag:",
@@ -274,3 +277,24 @@ ggplot(bank, aes(x = Credit_Limit, y = Avg_Open_To_Buy, color = as.factor(Attrit
 
 # Save the plot in the plots/ folder
 ggsave("../plots/credit_limit_vs_open_to_buy.png", width = 10, height = 10)
+
+# Boxplot of the response variable Attrition_Flag
+
+ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
+  geom_bar(aes(fill = as.factor(Attrition_Flag)), color = "#FFFFFF") +
+  scale_fill_manual(values = c("royalblue", "#FF5733"),
+                    name = "Attrition Flag:",
+                    labels = c("Existing", "Attrited")) +
+  geom_text(aes(label = after_stat(count),
+                y = after_stat(count)),
+            stat = "count",
+            vjust = -0.5,
+            size = 10) +
+  labs(x = "Attrition Flag", y = "Count") +
+  ggtitle("Response variable: Attrition_Flag") +
+  theme(legend.position = c(.85, .85),
+        legend.background = element_rect(fill = "transparent"),
+        legend.direction = "vertical",
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1) +
+  ylim(0, 10000)

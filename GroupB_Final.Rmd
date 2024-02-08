@@ -19,16 +19,39 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libraries, echo=FALSE, warning=FALSE, message=FALSE}
-# Loading all necessary libraries
-library(car)
-library(caret)
-library(pROC)
-library(forcats)
-library(ROSE)
-options(rgl.useNULL=TRUE)
-# Loading the utilities for assessment and plots
+```{r libraries_and_utilities, echo=FALSE, warning=FALSE, message=FALSE}
+# Loading the utilities for libraries, assessment and plots
 source("markdown_utils.r")
+
+# Eventual additional options
+options(rgl.useNULL=TRUE)
+
+# Loading the dataset for eda plots
+
+# Set working directory as this directory
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
+# Load the dataset from the datasets/ folder
+bank <- read.csv("./datasets/BankChurners.csv", sep = ",")
+
+# ⚠️ Remove the first and last two columns as suggested in the README
+bank <- bank[, -c(1, 22, 23)]
+
+# ⚠️ Convert the Attrition_Flag column to a binary variable:
+# - 0: Existing Customer
+# - 1: Attrited Customer
+bank$Attrition_Flag <- ifelse(bank$Attrition_Flag == "Attrited Customer", 1, 0)
+
+# Convert all categorical variables to factors
+bank$Gender <- as.factor(bank$Gender)
+bank$Education_Level <- as.factor(bank$Education_Level)
+bank$Marital_Status <- as.factor(bank$Marital_Status)
+bank$Income_Category <- as.factor(bank$Income_Category)
+bank$Card_Category <- as.factor(bank$Card_Category)
+
+# FIlter numerical variables and categorical variables
+bank_num <- bank[, sapply(bank, is.numeric)]
+bank_cat <- bank[, sapply(bank, is.factor)]
 ```
 
 # Problem statement and dataset
@@ -39,7 +62,109 @@ The `BankChurners` dataset contains information about a bank's costumers and the
 
 With the exclusion of the first variable (`CLIENTNUM`), that is just an identification number, and the last two (`Naive_Bayes_Classifier...`) variables, the dataset contains 19 possible covariates to be used for prediction. Among these, there are 6 categorical variables and 13 numerical variables.
 
-The `Attrition_Flag` variable is the response variable and it is a binary variable. The dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable.\
+The `Attrition_Flag` variable is the response variable and it is a binary variable. As it's possible to see form the following barplot, the dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable.
+
+```{r attrition_flag_barplot, echo=FALSE}
+ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
+  geom_bar(aes(fill = as.factor(Attrition_Flag)), color = "#FFFFFF") +
+  scale_fill_manual(values = c("royalblue", "#FF5733"),
+                    name = "Attrition Flag:",
+                    labels = c("Existing", "Attrited")) +
+  geom_text(aes(label = after_stat(count),
+                y = after_stat(count)),
+            stat = "count",
+            vjust = -0.5,
+            size = 10) +
+  labs(x = "Attrition Flag", y = "Count") +
+  ggtitle("Response variable: Attrition_Flag") +
+  theme(legend.position = c(.85, .85),
+        legend.background = element_rect(fill = "transparent"),
+        legend.direction = "vertical",
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1) +
+  ylim(0, 10000)
+```
+
+To chek for possible correlation between the variables, we computed the correlation matrix and we plotted it using a heatmap. The correlation matrix is the following:
+
+```{r correlation_matrix, echo=FALSE}
+# Compute the correlation matrix
+corm <- bank_num |>
+  corrr::correlate() |>
+  corrr::shave(upper = FALSE)
+
+
+# Pivot the matrix and fix the labels
+corm <- corm |>
+  tidyr::pivot_longer(
+    cols = -term,
+    names_to = "colname",
+    values_to = "corr"
+  ) |>
+  dplyr::mutate(
+    rowname = forcats::fct_inorder(term),
+    colname = forcats::fct_inorder(colname),
+    label = dplyr::if_else(is.na(corr), "", sprintf("%1.2f", corr))
+  )
+
+# Plot the correlation matrix
+ggplot(corm, aes(rowname, fct_rev(colname),
+                 fill = corr)) +
+  geom_tile() +
+  geom_text(aes(
+    label = label,
+    color = abs(corr) < .75
+  )) +
+  coord_fixed(expand = FALSE) +
+  scale_color_manual(
+    values = c("white", "black"),
+    guide = "none"
+  ) +
+  scale_fill_distiller(
+    palette = "RdYlBu", na.value = "white",
+    direction = -1, limits = c(-1, 1),
+    name = "Pearson\nCorrelation:"
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme(panel.border = element_rect(color = NA, fill = NA),
+        legend.position = c(.85, .8),
+        axis.text.x = element_text(angle = 50, vjust = 1, hjust = 1))
+```
+
+As it's possible to see from the first column, the majority of the variables are not highly correlated with the response variable, with the exception of the `Total_Trans_Ct` variable that has a correlation of 0.37. However, an important thing to notice is that the correlation matrix shows some variables that are highly correlated with each other. Among these we can highlight:
+
+* the `Avg_Open_To_Buy` and `Credit_Limit` variables, which are totally correlated;
+* the `Months_on_book` and `Customer_Age` variables, that are reasonably correlated with a correlation of 0.79: indeed one expects that the number of months a customer has been with the bank is related to the customer's age;
+* the `Total_Trans_Amt` and `Total_Trans_Ct` variables, that show a correlation of 0.81;
+* the `Total_Revolving_Bal` and `Avg_Utilization_Ratio` variables, that are also highly correlated with a correlation of 0.62.
+
+Since both the `Total_Trans_Amt` and `Total_Trans_Ct` variables are highly correlated between each other but, contrairly to the other variables, also show a significant correlation with the response variable, it made sense to plot the two variables in the following scatter plot to check for possible patterns.
+
+```{r transactions_scatterplot, echo=FALSE}
+# Plot of Total_Trans_Ct vs Total_Trans_Amt
+ggplot(bank, aes(x = log(Total_Trans_Amt), y = Total_Trans_Ct, color = as.factor(Attrition_Flag))) +
+  geom_point(alpha = .5) +
+  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733"),
+                     name = "Attrition Flag:",
+                     labels = c("Existing", "Attrited")) +
+  labs(x = "Total Transaction Amount", y = "Total Transaction Count") +
+  theme(legend.position = c(.85, .15),
+        legend.background = element_rect(fill = "transparent"),
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1)
+```
+
+The scatter plot represents the total number of transactions (on the y axis) agains the logarithm of the total transaction amount (on the x axis). The plot is colored by the `Attrition_Flag` variable, and we can indeed visually confirm the correlation among the two variables. However we can also spot that the churned customers are more concentrated in the lower left part of the plot.\
+This fact is also reflected in the distribution analysis of the two variables reported below.
+  
+```{r trans_amt_distribution, echo=FALSE}
+plot_continuous(bank, Total_Trans_Amt, "Total Transaction Amount", "Amount", 1000)
+```
+
+```{r trans_ct_distribution}
+# plot_discrete(bank, Total_Trans_Ct, "Total Transaction Count", "Count")
+plot_continuous(bank, Total_Trans_Ct, "Total Transaction Count", "Count", 5)
+```
 
 # Models implementation
 
@@ -51,6 +176,8 @@ Possible multicollinearity problems, especially among the variables that showed 
 The final model has been built using the following variables:
 
 * `Gender`: the gender of the customer
+* `Marital_Status`: the marital status of the customer
+* `Income_Category`: the income category of the customer
 * `Total_Relationship_Count`: the total number of products held by the customer
 * `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
 * `Contacts_Count_12_mon`: the number of contacts in the last 12 months
@@ -59,8 +186,8 @@ The final model has been built using the following variables:
 * `Total_Trans_Ct`: the total transaction count in the last 12 months
 * `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
 
-Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Also, the `Months_Inactive_12_mon` variable has been converted to a factor due to its peculiar distribution with the levels `1`, `2`, `3` and `4+` months.
-Both these changes have significantly improved the model performance as portrayed by the metrics below. An ANOVA test has also been performed to check the significance of the model.
+Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Moreover the `Marital_Status` variable has been converted into a binary variable, taking the levels "Married" and "Not Married" since this change helped improving the statitical significane of the variable in the final model. For the same reason, the variable `Income_Category` has also been converted into a binary variable, dividing the clients in two categories: those with an income less than 120K and those with an income more than 120K.\
+Both these changes have significantly improved the model performance as portrayed by the metrics explained below. An ANOVA test has also been performed to check the significance of the model.
 
 In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cross validation with $k=10$. The metrics used are the following:
 
@@ -92,6 +219,13 @@ bank_logistic$Marital_Status <- forcats::fct_relevel(bank_logistic$Marital_Statu
                                             "Married",
                                             "Divorced")
 
+# Changing the levels of Marital_Status in either married or not married
+bank_logistic$Marital_Status <- fct_collapse(bank_logistic$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+
 bank_logistic$Income_Category <- as.factor(bank_logistic$Income_Category)
 bank_logistic$Income_Category <- forcats::fct_relevel(bank_logistic$Income_Category,
                                              "Unknown",
@@ -101,22 +235,20 @@ bank_logistic$Income_Category <- forcats::fct_relevel(bank_logistic$Income_Categ
                                              "$80K - $120K",
                                              "$120K +")
 
+# Changing the levels of income category into a binary variable:
+bank_logistic$Income_Category <- fct_collapse(bank_logistic$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
 # Override the Total_Trans_Amt variable with its log !!!
 bank_logistic$Total_Trans_Amt <- log(bank_logistic$Total_Trans_Amt)
 
 # Standardization (optional) all columns except response and categorical
 bank_logistic[, -c(1, 2, 3, 4)] <- scale(bank_logistic[, -c(1, 2, 3, 4)])
-
-# Converting Months_Inactive_12_mon to a factor
-bank_logistic$Months_Inactive_12_mon <- as.factor(bank_logistic$Months_Inactive_12_mon)
-levels(bank_logistic$Months_Inactive_12_mon) <- c("0", "1", "2", "3", "4", "5", "6+")
-
-# Joining toghether the levels after 4 months
-bank_logistic$Months_Inactive_12_mon <- fct_collapse(bank_logistic$Months_Inactive_12_mon,
-                                            "4+" = c("4", "5", "6+"))
-
-# Removing from the dataset the Marital_Status and Income_Category variables
-bank_logistic <- bank_logistic[, -c(3, 4)]
 
 # Rebuiding and checking the model
 simple_logistic_model <- learn_logistic(bank_logistic)
@@ -151,7 +283,7 @@ And similar results for the k-fold cross validation:
 cv_logistic(bank_logistic)
 ```
 
-From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the model. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $50\%$. The AIC and BIC values are also very low, which is a good sign for the model.
+From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the dataset. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $50\%$. The AIC and BIC values are also very low, which is a good sign for the model.
 
 ### Results on the synthetic dataset (ROSE)
 

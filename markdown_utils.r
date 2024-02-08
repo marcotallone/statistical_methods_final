@@ -1,10 +1,9 @@
 # LIBRARIES --------------------------------------------------------------------
-options(rgl.useNULL=TRUE) #don't remove this!
+options(rgl.useNULL = TRUE) #don't remove this!
 library(car)
 library(caret)
 library(pROC)
 library(forcats)
-library(pROC)
 library(adabag)
 library(randomForest)
 library(MASS)
@@ -12,12 +11,141 @@ library(splines)
 library(mgcv)
 library(glmnet)
 library(tidyverse)
-library(recipes) #
+library(recipes)
+library(ROSE)
+
+# For the plots
+library(ggplot2)
+library(ggExtra)
+library(ggforce)
+library(patchwork)
+library(RColorBrewer)
+library(dplyr)
+library(corrr)
+
+# PLOTS ------------------------------------------------------------------------
+
+plot_continuous <- function(dataset, variable, title, xlab, bins_width = 1) {
+  p1 <- ggplot(dataset, aes(x = {{ variable }},
+                            fill = as.factor(Attrition_Flag))) +
+    geom_histogram(binwidth = bins_width, color = "#FFFFFF") +
+    labs(title = paste("Histogram of", title), x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = c(.85, .85),
+          legend.background = element_rect(fill = "transparent"),
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  p2 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_violin(fill = "gray80", linewidth = 1, alpha = .5) +
+    geom_sina(aes(group = Attrition_Flag), alpha = .25) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p3 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_boxplot(fill = "gray80", alpha = .5,
+                 outlier.size = 4, outlier.alpha = .75) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p4 <- ggplot(dataset, aes(x = {{ variable }})) +
+    stat_ecdf(geom = "step", color = "royalblue") +
+    labs(title = paste("Cumulative Distribution of", title),
+         x = xlab, y = "Cumulative Distribution") +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
+}
+
+plot_discrete <- function(dataset, variable, title, xlab) {
+  p1 <- ggplot(dataset, aes(x = as.factor({{ variable }}),
+                            fill = as.factor(Attrition_Flag))) +
+    geom_bar(color = "#FFFFFF") +
+    labs(title = paste("Barplot of", title), x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = c(.85, .85),
+          legend.background = element_rect(fill = "transparent"),
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  p2 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_violin(fill = "gray80", linewidth = 1, alpha = .5) +
+    geom_sina(aes(group = Attrition_Flag), alpha = .25) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p3 <- ggplot(dataset, aes(x = as.factor(Attrition_Flag), y = {{ variable }},
+                            color = as.factor(Attrition_Flag))) +
+    labs(x = "Attrition Flag", y = xlab) +
+    scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733")) +
+    geom_boxplot(fill = "gray80", alpha = .5,
+                 outlier.size = 4, outlier.alpha = .75) +
+    coord_flip() +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  p4 <- ggplot(dataset, aes(x = {{ variable }})) +
+    stat_ecdf(geom = "step", color = "royalblue") +
+    labs(title = paste("Cumulative Distribution of", title),
+         x = xlab, y = "Cumulative Distribution") +
+    theme(legend.position = "none", aspect.ratio = 1)
+
+  (p1 / p4 / p2 / p3) + plot_layout(ncol = 2)
+}
+
+plot_categorical <- function(dataset, variable, xlab) {
+
+  # Compute the position of labels
+  class_prop <- dataset %>%
+    count({{variable}}) %>%
+    mutate(prop = n / sum(n) * 100,
+           ypos = cumsum(prop) - 0.5 * prop)
+
+  # Create the pie chart
+  pie <- ggplot(class_prop, aes(x = "", y = prop, fill = {{variable}})) +
+    geom_bar(stat = "identity", width = 1, color = "white") +
+    coord_polar("y", start = 0) +
+    theme_void() +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal", aspect.ratio = 1) +
+    # geom_text(aes(y = ypos, label = paste(round(prop, 1), "%")),
+    #           color = "white", size = 6) +
+    scale_fill_brewer(palette = "Set2",
+                      name = xlab)
+
+  box <- ggplot(dataset, aes(x = as.factor({{variable}}),
+                             fill = as.factor(Attrition_Flag))) +
+    geom_bar(color = "#FFFFFF") +
+    labs(x = xlab, y = "Count") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    theme(legend.position = "top",
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "horizontal",
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1)
+
+  (pie / box) + plot_layout(ncol = 2)
+}
 
 # LOGISTIC REGRESSION ----------------------------------------------------------
 # LEARN / PREDICT FUNCTIONS ----------------------------------------------------
 
-# learn_logisticing function: f'_learn_logistic
+# learn_logistic function: f'_learn_logistic
 learn_logistic <- function(data) {
   # Logistic regression
   model <- glm(Attrition_Flag ~ .,
