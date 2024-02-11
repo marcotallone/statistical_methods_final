@@ -994,6 +994,23 @@ AUC_ROC      85.02715
 Accuracy for reduced model fit2 without performing kfold is better. So, next we try tuning a tree of reduced model. 
 
 ### Classification Tree with tuning parameters(Hyperparameter)
+we defined some parameters in control for hyperparameters like minsplit,minbucket = round(5 / 3),maxdepth = 3, cp = 0.011 and got below metrics for tuned model.
+
+```
+table(predictions_tune)
+predictions_tune
+   0    1 
+1736  289
+
+   Metric    Value
+Accuracy    91.90123
+Precision   94.23963
+Recall      96.23529
+Specificity 69.23077
+F1_Score    95.22701
+AUC_ROC     82.73303
+```
+
 
 
 
