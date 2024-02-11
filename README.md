@@ -27,7 +27,7 @@
 - [Applying ROSE package](#rose-package-to-deal-with-class-imbalance)
   - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
   - [ROSE for Splines](#rose-results-for-splines)
-  - [ROSE for Ensamble Methods](#rose-results-for-ensamble-methods)
+  - [ROSE for Ensemble Methods](#rose-results-for-ensemble-methods)
 
 ---
 ## TO-DO
@@ -1043,7 +1043,7 @@ Average BIC: 6772.415 +/- 39.65286
 ```
 
 
-### ROSE Results for Ensamble Methods
+### ROSE Results for Ensemble Methods
 >[!NOTE]
 > Look at  `r_scripts/testing_ROSE/ROSE_ensamble.R` 
 > EVALUTATION OF MODELS WITH REDUCED ATTRIBUTES NOT DONE YET
