@@ -860,6 +860,142 @@ Average variable importance ranking:
 **TODO: Fix Dummy AUC (50% doesn't seem right)**
 
 ## Decision Trees
+I have tried to use the Decision Trees method  via classification trees to consider modelling the predictor variable Attrition Flag.
+
+>[!NOTE]
+> The model with Decision Trees and relevant procedures tried can be found in the `r_scripts/Decision_Trees.r` file.
+
+### Feature Engineering
+I started with preprocessing the dataset on similar lines as done before for previous models and converted traget variable Attrition flag into binary variable (0 and 1) and converted relevant categorical variables into factors.
+
+I took the approach of building classification tree model by starting with dummy classifier ( as a baseline) followed by full tree and later optimising it tree with less variables(reduced tree model),k-fold tree and finally with  hyperparameter tuned model.Firstly data partion was created to segregate train and test data.
+
+###Dummy Classifier tree : to Predict the majority class for all instances
+
+###Full Classification tree considering all predictors and response = Attrition_Flag
+ran predict on train_data (considering all other 19 predictors) and below are their performance indexes 
+
+```
+Method         Metric     Value
+Full_tree    Accuracy    93.28395
+Full_tree   Precision    95.15012
+Full_tree      Recall    96.94118
+Full_tree  Specificity   74.15385
+Full_tree    F1_Score    96.03730
+Full_tree     AUC_ROC    85.54751
+```
+###Reduced Tree Model(with less variables)
+to deduce about less number of variables ,I tried to run glm procedure (for logistric regression) to decide the variables on the basis of p-values.
+```
+summary(lr1)
+
+Call:
+glm(formula = Attrition_Flag ~ ., family = binomial, data = bank)
+
+Coefficients: (1 not defined because of singularities)
+                                Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                    6.723e+00  4.748e-01  14.162  < 2e-16 ***
+Customer_Age                  -6.131e-03  7.711e-03  -0.795 0.426532    
+GenderM                       -8.938e-01  1.455e-01  -6.142 8.16e-10 ***
+Dependent_count                1.358e-01  2.998e-02   4.530 5.89e-06 ***
+Education_LevelDoctorate       3.689e-01  2.081e-01   1.773 0.076218 .  
+Education_LevelGraduate       -5.798e-03  1.396e-01  -0.042 0.966864    
+Education_LevelHigh School     1.026e-02  1.488e-01   0.069 0.945016    
+Education_LevelPost-Graduate   3.112e-01  2.050e-01   1.518 0.128952    
+Education_LevelUneducated      6.955e-02  1.573e-01   0.442 0.658477    
+Education_LevelUnknown         1.329e-01  1.554e-01   0.855 0.392310    
+Marital_StatusMarried         -4.994e-01  1.544e-01  -3.234 0.001219 ** 
+Marital_StatusSingle           1.081e-01  1.549e-01   0.698 0.485248    
+Marital_StatusUnknown          4.528e-02  1.962e-01   0.231 0.817467    
+Income_Category$40K - $60K    -9.083e-01  2.026e-01  -4.484 7.33e-06 ***
+Income_Category$60K - $80K    -6.405e-01  1.791e-01  -3.576 0.000349 ***
+Income_Category$80K - $120K   -2.983e-01  1.663e-01  -1.794 0.072811 .  
+Income_CategoryLess than $40K -7.702e-01  2.190e-01  -3.516 0.000438 ***
+Income_CategoryUnknown        -8.321e-01  2.322e-01  -3.584 0.000338 ***
+Card_CategoryGold              1.066e+00  3.521e-01   3.026 0.002475 ** 
+Card_CategoryPlatinum          9.816e-01  6.813e-01   1.441 0.149654    
+Card_CategorySilver            4.502e-01  1.962e-01   2.294 0.021778 *  
+Months_on_book                -4.685e-03  7.673e-03  -0.611 0.541484    
+Total_Relationship_Count      -4.493e-01  2.750e-02 -16.338  < 2e-16 ***
+Months_Inactive_12_mon         5.078e-01  3.793e-02  13.387  < 2e-16 ***
+Contacts_Count_12_mon          5.133e-01  3.655e-02  14.044  < 2e-16 ***
+Credit_Limit                  -1.971e-05  6.860e-06  -2.873 0.004064 ** 
+Total_Revolving_Bal           -9.321e-04  7.207e-05 -12.934  < 2e-16 ***
+Avg_Open_To_Buy                       NA         NA      NA       NA    
+Total_Amt_Chng_Q4_Q1          -4.262e-01  1.878e-01  -2.269 0.023253 *  
+Total_Trans_Amt                4.855e-04  2.295e-05  21.154  < 2e-16 ***
+Total_Trans_Ct                -1.192e-01  3.731e-03 -31.944  < 2e-16 ***
+Total_Ct_Chng_Q4_Q1           -2.798e+00  1.889e-01 -14.813  < 2e-16 ***
+Avg_Utilization_Ratio         -1.253e-01  2.470e-01  -0.507 0.612020    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 8927.2  on 10126  degrees of freedom
+Residual deviance: 4710.6  on 10095  degrees of freedom
+AIC: 4774.6
+
+Number of Fisher Scoring iterations: 6
+```
+Summary shows NA values also. This is case when alias are present. Then I checked alias.
+The variable "Avg_Open_To_But" is alias. After removal of this variable. LR ran again and this time 
+we got summary of lr2 model and also got significant variables as below-
+#Gender, Dependent_count,  Marital_Status,  Income_Category, Card_Category, Total_Relationship_Count,
+#Months_Inactive_12_mon, Contacts_Count_12_mon, Credit_Limit,Total_Revolving_Bal, 
+#Total_Amt_Chng_Q4_Q1, Total_Trans_Amt, Total_Trans_Ct, Total_Ct_Chng_Q4_Q1
+multicollinearity is als checked which was not found.
+
+```
+                             GVIF Df GVIF^(1/(2*Df))
+Customer_Age             2.819426  1        1.679115
+Gender                   3.707551  1        1.925500
+Dependent_count          1.056910  1        1.028061
+Education_Level          1.036146  6        1.002963
+Marital_Status           1.085814  3        1.013816
+Income_Category          5.092476  5        1.176774
+Card_Category            1.586441  3        1.079951
+Months_on_book           2.811208  1        1.676666
+Total_Relationship_Count 1.194193  1        1.092791
+Months_Inactive_12_mon   1.057074  1        1.028141
+Contacts_Count_12_mon    1.043340  1        1.021440
+Credit_Limit             2.710246  1        1.646282
+Total_Revolving_Bal      2.551374  1        1.597302
+Total_Amt_Chng_Q4_Q1     1.158843  1        1.076496
+Total_Trans_Amt          4.386664  1        2.094436
+Total_Trans_Ct           4.528855  1        2.128111
+Total_Ct_Chng_Q4_Q1      1.181094  1        1.086782
+Avg_Utilization_Ratio    2.982879  1        1.727101
+
+```
+ we ran predict procedure for tree-reduced model on train data  and got below metrics on validaton data -
+```
+    Metric    Value
+Accuracy     93.03704
+Precision    94.97980
+Recall       96.82353
+Specificity  73.23077
+F1_Score     95.89281
+AUC_ROC      85.02715
+```
+
+####Classififcation tree with k-fold cross validation 
+
+```
+ Metric       Value
+ Accuracy    90.07407
+ Precision   92.65794
+ Recall      95.76471
+ Specificity 60.30769
+ F1_Score    94.18571
+ AUC_ROC     78.03620
+```
+
+Accuracy for reduced model fit2 without performing kfold is better. So, next we try tuning a tree of reduced model. 
+
+### Classification Tree with tuning parameters(Hyperparameter)
+
+
 
 ## ROSE package to deal with class imbalance
 In this section we will explore how ROSE package might impact on the performance of all the models implemented above
