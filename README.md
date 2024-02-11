@@ -1010,7 +1010,7 @@ predictions_kfold
 Accuracy for reduced model fit2 without performing kfold is better. So, next we try tuning a tree of reduced model. 
 
 ### Classification Tree with tuning parameters(Hyperparameter)
-we defined some parameters in control for hyperparameters like minsplit,minbucket = round(5 / 3),maxdepth = 3, cp = 0.011 and got below metrics for tuned model.
+Fine-tuning the model's hyperparameters, such as the complexity parameter (cp), helps in achieving a balance between model complexity and performance. This step can lead to a more optimized and generalizable model.we defined some parameters in control for hyperparameters like minsplit,minbucket = round(5 / 3),maxdepth = 3, cp = 0.011 and got below metrics for tuned model.
 
 ```
 table(predictions_tune)
