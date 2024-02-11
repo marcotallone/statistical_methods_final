@@ -1015,12 +1015,12 @@ predictions_kfold
 
 ```
 
-**Overall Considerations at this stage:**
+## Overall Considerations at this stage:
 
 The full tree generally performs slightly better than the reduced model tree in most metrics, indicating that the additional variables in the full tree contribute to improved performance.Both the full tree and reduced model tree outperform the k-fold tree across most metrics, suggesting that the k-fold tree might have slightly reduced predictive power or stability.we can consider the trade-offs between model complexity, interpretability, and performance when deciding between the full tree and the reduced model tree.we can also evaluate whether the observed differences in metrics are practically significant and align with the business goals.
 to try further we can ontinue with the iterative process, and consider further steps such as hyperparameter tuning or exploring alternative algorithms based on these comparisons.So, next we try tuning a tree of reduced model with hyperparameters.
 
-### Classification Tree with tuning parameters(Hyperparameter)
+##  Classification Tree with tuning parameters(Hyperparameter)
 Fine-tuning the model's hyperparameters, such as the complexity parameter (cp), helps in achieving a balance between model complexity and performance. This step can lead to a more optimized and generalizable model.we defined some parameters in control for hyperparameters like minsplit,minbucket = round(5 / 3),maxdepth = 3, cp = 0.011 and got below metrics for tuned model.
 
 ```
@@ -1038,18 +1038,18 @@ F1_Score    95.22701
 AUC_ROC     82.73303
 ```
 
-**Overall Considerations after tuning model**
+## Overall Considerations after tuning model**
 
 The tuned model shows improvements in precision, recall, and F1 score compared to the k-fold tree, indicating a more balanced and accurate model.
 The specificity of the tuned model is lower than that of the full tree and reduced model tree.we can consider the implications for identifying non-churned customers in terms of business context.The decision on whether to choose one of the existing models or explore a different approach, such as using a Random Forest, depends on several factors:
 
-Performance Goals:
+## Performance Goals:
 we have to assess how well each model aligns with the performance goals of the business problem. If one of the models consistently outperforms others across key metrics important for the business, it may be a strong candidate.
-Interpretability:
+## Interpretability:
 we also have to consider the interpretability of the models. Decision trees are inherently interpretable, and if interpretability is crucial, the reduced model tree might be preferred. Random Forests, being an ensemble method, provide powerful predictive capabilities but are generally less interpretable.
-Resourcec Constraints:
+## Resourcec Constraints:
 we also know that Random Forests, being an ensemble method, are computationally more intensive compared to individual decision trees.
-Ensemble Learning:
+## Ensemble Learning:
 If the goal is to further improve predictive performance and handle complex relationships, we may explore ensemble methods like Random Forests. Random Forests have the potential to capture more nuanced patterns and reduce overfitting.
 
 
