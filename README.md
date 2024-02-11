@@ -876,6 +876,11 @@ I took the approach of building classification tree model by starting with dummy
 ran predict on train_data (considering all other 19 predictors) and below are their performance indexes 
 
 ```
+table(predictions)
+predictions
+   0    1 
+1732  293
+
 Method         Metric     Value
 Full_tree    Accuracy    93.28395
 Full_tree   Precision    95.15012
@@ -970,6 +975,11 @@ Avg_Utilization_Ratio    2.982879  1        1.727101
 ```
 we ran predict procedure for tree-reduced model on train data  and got below metrics on validaton data -
 ```
+table(predictions_rm)
+predictions_rm
+   0    1 
+1733  292
+
     Metric    Value
 Accuracy     93.03704
 Precision    94.97980
@@ -982,6 +992,11 @@ AUC_ROC      85.02715
 ### Classififcation tree with k-fold cross validation 
 
 ```
+table(predictions_kfold)
+predictions_kfold
+   0    1 
+1757  268
+
  Metric       Value
  Accuracy    90.07407
  Precision   92.65794
@@ -989,6 +1004,7 @@ AUC_ROC      85.02715
  Specificity 60.30769
  F1_Score    94.18571
  AUC_ROC     78.03620
+
 ```
 
 Accuracy for reduced model fit2 without performing kfold is better. So, next we try tuning a tree of reduced model. 
