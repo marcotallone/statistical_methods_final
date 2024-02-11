@@ -28,6 +28,7 @@
   - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
   - [ROSE for Splines](#rose-results-for-splines)
   - [ROSE for Ensemble Methods](#rose-results-for-ensemble-methods)
+  - [ROSE for Decision Trees](#rose-results-for-decision-trees)
 
 ---
 ## TO-DO
@@ -1394,3 +1395,19 @@ Average variable importance ranking:
 19          Income_Category           9.318932  3.9632489
 ----------------------------------------
 ```
+
+### ROSE Results for Decision Trees
+>[!NOTE]
+> Look at  `r_scripts/testing_ROSE/ROSE_Decision_Trees.R`
+>
+```
+25    ROSE_tree    Accuracy 81.79125
+26    ROSE_tree   Precision 81.96530
+27    ROSE_tree      Recall 82.06129
+28    ROSE_tree Specificity 81.51479
+29    ROSE_tree    F1_Score 82.01327
+30    ROSE_tree     AUC_ROC 81.78804
+
+
+```
+
