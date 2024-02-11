@@ -870,9 +870,9 @@ I started with preprocessing the dataset on similar lines as done before for pre
 
 I took the approach of building classification tree model by starting with dummy classifier ( as a baseline) followed by full tree and later optimising it tree with less variables(reduced tree model),k-fold tree and finally with  hyperparameter tuned model.Firstly data partion was created to segregate train and test data.
 
-###Dummy Classifier tree : to Predict the majority class for all instances
+##Dummy Classifier tree : to Predict the majority class for all instances
 
-###Full Classification tree considering all predictors and response = Attrition_Flag
+##Full Classification tree considering all predictors and response = Attrition_Flag
 ran predict on train_data (considering all other 19 predictors) and below are their performance indexes 
 
 ```
@@ -979,7 +979,7 @@ F1_Score     95.89281
 AUC_ROC      85.02715
 ```
 
-####Classififcation tree with k-fold cross validation 
+###Classififcation tree with k-fold cross validation 
 
 ```
  Metric       Value
