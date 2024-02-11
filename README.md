@@ -989,6 +989,14 @@ F1_Score     95.89281
 AUC_ROC      85.02715
 ```
 
+**At this stage,Comparison with Full Tree Model:**
+
+The reduced model tree maintains high performance similar to the full tree model across various metrics. This suggests that reducing the number of variables did not significantly impact the model's overall predictive power. It could potentially lead to a more interpretable and efficient model.
+
+**Further Considerations to be checked**-
+
+While the metrics are important, we must also consider the specific goals and context of business problem. Depending on the business requirements, we may prioritize certain metrics over others or even try some more iterations like k-fold.
+
 ### Classififcation tree with k-fold cross validation 
 
 ```
@@ -1007,7 +1015,10 @@ predictions_kfold
 
 ```
 
-Accuracy for reduced model fit2 without performing kfold is better. So, next we try tuning a tree of reduced model. 
+**Overall Considerations at this stage:**
+
+The full tree generally performs slightly better than the reduced model tree in most metrics, indicating that the additional variables in the full tree contribute to improved performance.Both the full tree and reduced model tree outperform the k-fold tree across most metrics, suggesting that the k-fold tree might have slightly reduced predictive power or stability.we can consider the trade-offs between model complexity, interpretability, and performance when deciding between the full tree and the reduced model tree.we can also evaluate whether the observed differences in metrics are practically significant and align with the business goals.
+to try further we can ontinue with the iterative process, and consider further steps such as hyperparameter tuning or exploring alternative algorithms based on these comparisons.So, next we try tuning a tree of reduced model with hyperparameters.
 
 ### Classification Tree with tuning parameters(Hyperparameter)
 Fine-tuning the model's hyperparameters, such as the complexity parameter (cp), helps in achieving a balance between model complexity and performance. This step can lead to a more optimized and generalizable model.we defined some parameters in control for hyperparameters like minsplit,minbucket = round(5 / 3),maxdepth = 3, cp = 0.011 and got below metrics for tuned model.
