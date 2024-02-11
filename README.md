@@ -872,7 +872,7 @@ I took the approach of building classification tree model by starting with dummy
 
 ##Dummy Classifier tree : to Predict the majority class for all instances
 
-##Full Classification tree considering all predictors and response = Attrition_Flag
+### Full Classification tree considering all predictors and response = Attrition_Flag
 ran predict on train_data (considering all other 19 predictors) and below are their performance indexes 
 
 ```
@@ -884,7 +884,7 @@ Full_tree  Specificity   74.15385
 Full_tree    F1_Score    96.03730
 Full_tree     AUC_ROC    85.54751
 ```
-###Reduced Tree Model(with less variables)
+### Reduced Tree Model(with less variables)
 to deduce about less number of variables ,I tried to run glm procedure (for logistric regression) to decide the variables on the basis of p-values.
 ```
 summary(lr1)
@@ -968,7 +968,7 @@ Total_Ct_Chng_Q4_Q1      1.181094  1        1.086782
 Avg_Utilization_Ratio    2.982879  1        1.727101
 
 ```
- we ran predict procedure for tree-reduced model on train data  and got below metrics on validaton data -
+we ran predict procedure for tree-reduced model on train data  and got below metrics on validaton data -
 ```
     Metric    Value
 Accuracy     93.03704
@@ -979,7 +979,7 @@ F1_Score     95.89281
 AUC_ROC      85.02715
 ```
 
-###Classififcation tree with k-fold cross validation 
+### Classififcation tree with k-fold cross validation 
 
 ```
  Metric       Value
