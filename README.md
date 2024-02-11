@@ -8,7 +8,7 @@
 |:---:|:---:|:---:|
 | Sara | - | DSAI |
 | Giulio | Fantuzzi | DSAI |
-| Vishal | - | DSAI |
+| Vishal | Nigam | DSAI |
 | Marco | Tallone | SDIC |
 | Alessio | Valentinis | DSAI |
 
@@ -22,7 +22,8 @@
   - [Logistic Regression](#logistic-regression)
   - [Penalized Regression](#penalized-regression)
   - [Splines](#splines)
-  - [Ensamble methods](#ensamble-methods)
+  - [Ensemble methods](#ensemble-methods)
+  - [Decision Trees](#decision-trees)
 - [Applying ROSE package](#rose-package-to-deal-with-class-imbalance)
   - [ROSE for Logistic Regression](#rose-results-for-logistic-regression)
   - [ROSE for Splines](#rose-results-for-splines)
@@ -550,7 +551,7 @@ Average BIC: 98.15811 +/- 0
 ----------------------------------------
 ```
 
-## Ensamble methods
+## Ensemble methods
 
 **NB: I noticed that in the preprocessing steps, we modified the Attrition_Flag variable making it binary, but we let it NUMERICAL (forcing models to do regression on it)! I don't know if it was intended, but either case it's worth a check. I already made a change in my file called `ensamble.R`**
 
@@ -858,6 +859,7 @@ Average variable importance ranking:
 **NB: my code is still really verbose and has much more computation than required, but it is just as a backup and validation to see if "manually-computed" coefficients were consistent with the ones given from the libraries.**
 **TODO: Fix Dummy AUC (50% doesn't seem right)**
 
+## Decision Trees
 
 ## ROSE package to deal with class imbalance
 In this section we will explore how ROSE package might impact on the performance of all the models implemented above
