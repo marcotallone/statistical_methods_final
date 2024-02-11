@@ -4,7 +4,6 @@ print(dirname(rstudioapi::getSourceEditorContext()$path))
 # Set working directory as this directory
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
-#setwd("D:/Vishal")
 
 # Load the dataset from the datasets/ folder
 bank <- read.csv("./datasets/BankChurners.csv", sep = ",")
@@ -68,7 +67,7 @@ fit <- rpart(Attrition_Flag ~ ., method="class", data = train_data)
 rpart.plot(fit, extra=1, digits=4, box.palette="auto")
 
 predictions <- predict(fit, type = "class", newdata = validation_data)
-
+table(predictions)
 head(predictions)
 
 levels(predictions)
@@ -100,6 +99,8 @@ original_performance <- c(Accuracy = accuracy, Precision = precision, Recall = r
                           Specificity = specificity, F1_Score = f1_score, AUC_ROC = auc_roc)
 
 original_performance
+
+
 
 # Now, let's consider the logistic regression to decide the significant variables from glm based on p-values
 
@@ -147,12 +148,18 @@ validation_data <- validation_data[,c("Attrition_Flag", "Gender", "Dependent_cou
 fit1 <- rpart(Attrition_Flag ~ Gender + Dependent_count + Marital_Status + Income_Category + Card_Category + Total_Relationship_Count + 
                Months_Inactive_12_mon + Contacts_Count_12_mon + Credit_Limit + Total_Revolving_Bal + 
                 Total_Amt_Chng_Q4_Q1 + Total_Trans_Amt + Total_Trans_Ct + Total_Ct_Chng_Q4_Q1, method="class", data = train_data)
-plotcp(fit1)
+plotcp(fit1) #gives cp parameters later to be chosen for hyperparameter tuning
 
 rpart.plot(fit1, extra=1, digits=4, box.palette="auto")
 
-predictions_rm <- predict(fit1, type = "class", newdata = validation_data)
+pruned_tree <- prune(fit1, cp = 0.011)
+rpart.plot(pruned_tree, extra=1, digits=4, box.palette="auto")
+# Plot the pruned tree
+plot(pruned_tree)
+text(pruned_tree, use.n = TRUE)
 
+predictions_rm <- predict(fit1, type = "class", newdata = validation_data)
+table(predictions_rm)
 #Performance indices:
 
 # Calculate accuracy
@@ -182,6 +189,7 @@ rm_performance
 
 #k-fold cross validation
 
+
 ctrl <- trainControl(method = "cv",  # Use k-fold cross-validation
                      number = 10)     # Number of folds (e.g., 10-fold)
 
@@ -197,6 +205,7 @@ print(cv)
 
 predictions_kfold <- predict(cv, type = "raw", newdata = validation_data)
 
+table(predictions_kfold)
 #Performance indices:
 
 # Calculate accuracy
@@ -227,8 +236,6 @@ kfold_performance
 
 #Hyperparameter tuning
 
-# partition the data
-
 # Define parameters for tuning
 ctrl <- rpart.control(minsplit = 4,
                          minbucket = round(5 / 3),
@@ -237,7 +244,7 @@ ctrl <- rpart.control(minsplit = 4,
 
 
 
-# Perform grid search
+# Perform tuning model
 fit_tune <- rpart(Attrition_Flag ~ Gender + Dependent_count + Marital_Status + Income_Category + Card_Category + Total_Relationship_Count + 
                     Months_Inactive_12_mon + Contacts_Count_12_mon + Credit_Limit + Total_Revolving_Bal + 
                     Total_Amt_Chng_Q4_Q1 + Total_Trans_Amt + Total_Trans_Ct + Total_Ct_Chng_Q4_Q1, method = "class", data = train_data, control = ctrl)
@@ -293,6 +300,52 @@ tune_tree_performance <- c(Accuracy = accuracy_tune, Precision = precision_tune,
 
 tune_tree_performance
 
+###Random Forest check
+library(randomForest)
+randomforest_model <- randomForest(Attrition_Flag ~ ., data = train_data, ntree = 100, mtry = 4)
+#validation_data$rf_predictions <- predict(randomforest_model, newdata = test_data)
+plot(randomforest_model)
+predictions_rf <- predict(randomforest_model, newdata = validation_data, type = "class")
+
+levels(predictions_rf)
+table(predictions_rf)
+
+dim(data.frame(predictions_rf))
+
+#Performance indices:
+
+# Calculate accuracy
+accuracy_rf <- confusionMatrix(predictions_rf, validation_data$Attrition_Flag)$overall['Accuracy']
+
+# Calculate precision
+precision_rf <- confusionMatrix(predictions_rf, validation_data$Attrition_Flag)$byClass['Precision']
+
+# Calculate recall
+recall_rf <- confusionMatrix(predictions_rf, validation_data$Attrition_Flag)$byClass['Sensitivity']
+
+# Calculate specificity
+specificity_rf <- confusionMatrix(predictions_rf, validation_data$Attrition_Flag)$byClass['Specificity']
+
+# Calculate F1 score
+f1_score_rf <- confusionMatrix(predictions_rf, validation_data$Attrition_Flag)$byClass['F1']
+
+# Calculate AUC-ROC
+roc_rf <- roc(validation_data$Attrition_Flag, as.numeric(predictions_rf))
+auc_roc_rf <- auc(roc_rf)
+
+rf_tree_performance <- c(Accuracy = accuracy_rf, Precision = precision_rf, Recall = recall_rf, 
+                           Specificity = specificity_rf, F1_Score = f1_score_rf, AUC_ROC = auc_roc_rf)
+
+rf_tree_performance
+
+
+##random forest ends here
+
+test_data$rf_predictions <- predict(randomforest_model, newdata = test_data)
+
+rf_metrics <- calculate_metrics(test_data$Total_points, test_data$rf_predictions)
+
+
 
 # Checking balance in response variable:
 
@@ -304,43 +357,45 @@ table(bank$Attrition_Flag)
 # cat("Existing customers (maj class): ",sum(bank_logistic$Attrition_Flag==0))
 # cat("Proportion of attrited:",
 #     sum(bank_logistic$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
-
-install.packages("ROSE")
+bank_ROSE <- bank[,c("Attrition_Flag", "Gender", "Dependent_count", "Marital_Status", "Income_Category", "Card_Category", 
+                           "Total_Relationship_Count", "Months_Inactive_12_mon", "Contacts_Count_12_mon", "Credit_Limit", 
+                           "Total_Revolving_Bal", "Total_Amt_Chng_Q4_Q1", "Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1")]
+#install.packages("ROSE")
 library(ROSE)
-train_balanced<- ROSE(Attrition_Flag~., data=train_data, seed = 123)$data
+bank_balanced<- ROSE(Attrition_Flag ~ ., data=bank_ROSE, seed = 123)$data
 
-table(train_balanced$Attrition_Flag)
+table(bank_balanced$Attrition_Flag)
 
 
 #Now we can run a classification tree model on the new balanced dataset:
 
-ROSE_tree_fit <- rpart(Attrition_Flag ~ ., method="class", data = train_balanced)
+ROSE_tree_fit <- rpart(Attrition_Flag ~ ., method="class", data = bank_balanced)
 
 rpart.plot(ROSE_tree_fit, extra=1, digits=4, box.palette="auto")
 
-predictions_ROSE <- predict(ROSE_tree_fit, type = "class", newdata= validation_data)
+predictions_ROSE <- predict(ROSE_tree_fit, type = "class", newdata= bank_balanced)
 
 #Performance indices:
 
 # Calculate accuracy
-accuracy_ROSE <- confusionMatrix(predictions_ROSE, validation_data$Attrition_Flag)$overall['Accuracy']
+accuracy_ROSE <- confusionMatrix(predictions_ROSE, bank_balanced$Attrition_Flag)$overall['Accuracy']
 
 # Calculate precision
-precision_ROSE <- confusionMatrix(predictions_ROSE, validation_data$Attrition_Flag)$byClass['Precision']
+precision_ROSE <- confusionMatrix(predictions_ROSE, bank_balanced$Attrition_Flag)$byClass['Precision']
 
 # Calculate recall
-recall_ROSE <- confusionMatrix(predictions_ROSE, validation_data$Attrition_Flag)$byClass['Sensitivity']
+recall_ROSE <- confusionMatrix(predictions_ROSE, bank_balanced$Attrition_Flag)$byClass['Sensitivity']
 
 # Calculate specificity
-specificity_ROSE <- confusionMatrix(predictions_ROSE, validation_data$Attrition_Flag)$byClass['Specificity']
+specificity_ROSE <- confusionMatrix(predictions_ROSE, bank_balanced$Attrition_Flag)$byClass['Specificity']
 
 # Calculate F1 score
-f1_score_ROSE <- confusionMatrix(predictions_ROSE, validation_data$Attrition_Flag)$byClass['F1']
+f1_score_ROSE <- confusionMatrix(predictions_ROSE, bank_balanced$Attrition_Flag)$byClass['F1']
 
 # Calculate AUC-ROC
 
-roc_ROSE <- roc(validation_data$Attrition_Flag, as.numeric(predictions_ROSE))
-auc_roc_ROSE <- auc(roc)
+roc_ROSE <- roc(bank_balanced$Attrition_Flag, as.numeric(predictions_ROSE))
+auc_roc_ROSE <- auc(roc_ROSE)
 
 ROSE_performance <- c(Accuracy = accuracy_ROSE, Precision = precision_ROSE, Recall = recall_ROSE, 
                           Specificity = specificity_ROSE, F1_Score = f1_score_ROSE, AUC_ROC = auc_roc_ROSE)
@@ -348,7 +403,7 @@ ROSE_performance <- c(Accuracy = accuracy_ROSE, Precision = precision_ROSE, Reca
 ROSE_performance
 
 
-# plotting of performance indices for different trees methods tried
+# plotting of performance indices for different trees
 
 all_trees <- data.frame(
   Method = rep(c("Full_tree","Reduced_tree","kfold_tree","Tuned_tree", "ROSE_tree"), each = 6),
@@ -362,3 +417,29 @@ ggplot(all_trees, aes(x = Method, y = Value, fill = Method)) +
   labs(title = "Comparison of Classification Tree Methods",
        x = "Method", y = "Value") +
   theme_minimal()
+
+library(dplyr)
+
+# Assuming 'all_trees' is your data frame
+library(dplyr)
+
+# Convert all values in the "Value" column to percentages
+all_trees <- all_trees %>%
+  mutate(Value = Value * 100)
+
+
+# Print the modified data frame
+print(all_trees)
+#metric print for full trees
+all_trees[1:6,2:3]
+#metric print for reduced_tree
+all_trees[7:12,2:3]
+#metric print for k-fold tree
+all_trees[13:18,2:3]
+#metric print for tuned_tree
+all_trees[19:24,2:3]
+#metric print for rose_tree
+all_trees[25:30,2:3]
+
+
+
