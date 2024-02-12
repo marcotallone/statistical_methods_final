@@ -945,12 +945,12 @@ AIC: 4774.6
 Number of Fisher Scoring iterations: 6
 ```
 Summary shows NA values also. This is case when alias are present. Then I checked alias.
-The variable "Avg_Open_To_But" is alias. After removal of this variable. LR ran again and this time 
+The variable "Avg_Open_To_Buy" is alias. After removal of this variable. LR ran again and this time 
 we got summary of lr2 model and also got significant variables as below-
 #Gender, Dependent_count,  Marital_Status,  Income_Category, Card_Category, Total_Relationship_Count,
 #Months_Inactive_12_mon, Contacts_Count_12_mon, Credit_Limit,Total_Revolving_Bal, 
 #Total_Amt_Chng_Q4_Q1, Total_Trans_Amt, Total_Trans_Ct, Total_Ct_Chng_Q4_Q1
-multicollinearity is als checked which was not found.
+multicollinearity is also checked (which was not found).
 
 ```
                              GVIF Df GVIF^(1/(2*Df))
