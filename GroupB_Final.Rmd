@@ -618,4 +618,27 @@ cv_rf(bank_ensamble_balanced)
   
 # Interpretations/Conclusions
 
-| Model | Accuracy | AUC | FPR | FNR | Interpretability |
+| Models | Accuracy|  AUC | FPR | FNR | ROSE | interpetability|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Logistic regression |  91.36 % | 93.44 % | 3.15 % | 46.1 % | NO | interpetability|
+|  | 81.41  %| 89.49  % | 18.44  % | 18.85  % | SI | interpetability|
+| GAM |  96.19  % | 98.79 % | 1.84 % | 14.62 % | NO | interpetability|
+|  |  84.48   % | 92.42  % | 17.22  % | 13.99  % | SI | interpetability|
+| Decision Trees |  acc |AUC | FPR | FNR | ROSE | interpetability|
+| Boost| 95.8 % |  98.58 % | 2.14 % | 14.94 % | NO | interpetability|
+|  | 88.29 % |  95.17 % | 12.1 % | 11.31 % | SI | interpetability|
+| Random Forest |  95.88 % | 98.53 % | 1.65 % | 18.63 % | NO | interpetability|
+|   | 88.7 % |  95.22 %  | 11.64 % | 10.98  % | SI | interpetability|
+| Logistic regression | acc|  AUC | FPR | FNR | ROSE | interpetability|
+
+|                 Variable | Mean_Gini_Decrease |
+|          Total_Trans_Amt |        594.260721 |
+|           Total_Trans_Ct |        547.113190 |
+|      Total_Revolving_Bal |        417.708629 |
+|      Total_Ct_Chng_Q4_Q1 |        381.125419 |
+| Total_Relationship_Count |        229.326038 |
+|    Contacts_Count_12_mon |        100.106859 |
+|   Months_Inactive_12_mon |         95.318035 |
+|                   Gender |         41.048829 |
+|           Marital_Status |         28.676287 |
+|          Income_Category |          8.953285 |

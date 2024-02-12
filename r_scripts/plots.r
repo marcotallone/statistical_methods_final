@@ -298,3 +298,80 @@ ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
         legend.title = element_text(size = 10),
         aspect.ratio = 1) +
   ylim(0, 10000)
+
+# -----------------------------------------------------------------------------
+df <- data.frame(
+  Models = c("Dummy Classifier", "Logistic Regression", "GAM", "Decision Trees", "Boost", "Random Forest"),
+  Accuracy = c(83.93, 91.36 , 96.19 , NA, 95.8 , 95.88 ),
+  AUC = c(0.5, 93.44 , 98.79 , NA, 98.58 , 98.53 ),
+  FPR = c(16.07, 3.15 , 1.84 , NA, 2.14 , 1.65 ),
+  FNR = c(0, 46.1 , 14.62 , NA, 14.94 , 18.63 )
+)
+
+# Barplot of accuracy values for different models
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = Accuracy, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(Accuracy, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "Accuracy (%)") +
+  ggtitle("Accuracy of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = AUC, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(AUC, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "AUC (%)") +
+  ggtitle("AUC of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = FPR, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(FPR, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "FPR (%)") +
+  ggtitle("FPR of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = FNR, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(FNR, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "FNR (%)") +
+  ggtitle("FNR of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+
+
+# -----------------------------------------------------------------------------
+
+df <- data.frame(
+  Variable = c("Total_Trans_Amt", "Total_Trans_Ct", "Total_Revolving_Bal", "Total_Ct_Chng_Q4_Q1", 
+               "Total_Relationship_Count", "Contacts_Count_12_mon", "Months_Inactive_12_mon", 
+               "Gender", "Marital_Status", "Income_Category"),
+  Mean_Gini_Decrease = c(594.260721, 547.113190, 417.708629, 381.125419, 229.326038, 
+                          100.106859, 95.318035, 41.048829, 28.676287, 8.953285)
+)
+
+# Horizontal barplot of the mean Gini decrease
+df %>%
+  ggplot(aes(x = Mean_Gini_Decrease, y = fct_reorder(Variable, Mean_Gini_Decrease))) +
+  geom_col(fill = "royalblue") +
+  geom_text(aes(label = round(Mean_Gini_Decrease, 2)),
+            hjust = -0.5, size = 4) +
+  xlim(0,680) +
+  labs(x = "Mean Gini Decrease", y = "Variable") +
+  ggtitle("Mean Gini Decrease of different variables") +
+  ggtitle("Variable Importance (Mean Gini Decrease)") +
+  theme(legend.position = "none")
