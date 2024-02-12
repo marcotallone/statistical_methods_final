@@ -421,7 +421,6 @@ learn_gam <- function(data) {
   #spline with gam
   model<-gam(Attrition_Flag ~ s(Customer_Age)
              +Gender
-             +Dependent_count
              +Marital_Status 
              +Total_Relationship_Count
              +Months_Inactive_12_mon
