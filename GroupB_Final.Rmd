@@ -641,3 +641,16 @@ cv_rf(bank_ensamble_balanced)
   
 # Interpretations/Conclusions
 
+| Models | Accuracy|  AUC | FPR | FNR | ROSE | interpetability|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Logistic regression |  91.36 % | 93.44 % | 3.15 % | 46.1 % | NO | interpetability|
+|  | 81.41  %| 89.49  % | 18.44  % | 18.85  % | SI | interpetability|
+| GAM |  96.19  % | 98.79 % | 1.84 % | 14.62 % | NO | interpetability|
+|  |  84.48   % | 92.42  % | 17.22  % | 13.99  % | SI | interpetability|
+| Decision Trees |  acc |AUC | FPR | FNR | ROSE | interpetability|
+| Boost| 95.8 % |  98.58 % | 2.14 % | 14.94 % | NO | interpetability|
+|  | 88.29 % |  95.17 % | 12.1 % | 11.31 % | SI | interpetability|
+| Random Forest |  95.88 % | 98.53 % | 1.65 % | 18.63 % | NO | interpetability|
+|   | 88.7 % |  95.22 %  | 11.64 % | 10.98  % | SI | interpetability|
+| Logistic regression | acc|  AUC | FPR | FNR | ROSE | interpetability|
+
