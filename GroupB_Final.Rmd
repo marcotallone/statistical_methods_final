@@ -52,6 +52,56 @@ bank$Card_Category <- as.factor(bank$Card_Category)
 # FIlter numerical variables and categorical variables
 bank_num <- bank[, sapply(bank, is.numeric)]
 bank_cat <- bank[, sapply(bank, is.factor)]
+
+# Bank Logistic dataset
+
+# Load the dataset and pre-process it
+bank_logistic <- read.csv("./datasets/BankChurners.csv", sep = ",")
+bank_logistic <- bank_logistic[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
+bank_logistic$Attrition_Flag <- ifelse(bank_logistic$Attrition_Flag == "Attrited Customer", 1, 0)
+
+# Convert all categorical variables to factors and reorder the levels
+bank_logistic$Gender <- as.factor(bank_logistic$Gender)
+bank_logistic$Marital_Status <- as.factor(bank_logistic$Marital_Status)
+bank_logistic$Marital_Status <- forcats::fct_relevel(bank_logistic$Marital_Status,
+                                            "Unknown",
+                                            "Single",
+                                            "Married",
+                                            "Divorced")
+
+# Changing the levels of Marital_Status in either married or not married
+bank_logistic$Marital_Status <- fct_collapse(bank_logistic$Marital_Status,
+                                    "Married" = c("Married"),
+                                    "Not Married" = c("Divorced",
+                                                      "Single",
+                                                      "Unknown"))
+
+bank_logistic$Income_Category <- as.factor(bank_logistic$Income_Category)
+bank_logistic$Income_Category <- forcats::fct_relevel(bank_logistic$Income_Category,
+                                             "Unknown",
+                                             "Less than $40K",
+                                             "$40K - $60K",
+                                             "$60K - $80K",
+                                             "$80K - $120K",
+                                             "$120K +")
+
+# Changing the levels of income category into a binary variable:
+bank_logistic$Income_Category <- fct_collapse(bank_logistic$Income_Category,
+                                     "Less than 120K" = c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K"),
+                                     "More than 120K" = c("$120K +"))
+
+# Override the Total_Trans_Amt variable with its log !!!
+bank_logistic$Total_Trans_Amt <- log(bank_logistic$Total_Trans_Amt)
+
+# Standardization (optional) all columns except response and categorical
+bank_logistic[, -c(1, 2, 3, 4)] <- scale(bank_logistic[, -c(1, 2, 3, 4)])
+
+# ROSE
+bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
 ```
 
 # Problem statement and dataset
@@ -64,30 +114,59 @@ With the exclusion of the first variable (`CLIENTNUM`), that is just an identifi
 
 The `Attrition_Flag` variable is the response variable and it is a binary variable. As it's possible to see form the following barplot, the dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable.
 
-```{r attrition_flag_barplot, echo=FALSE}
-ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
-  geom_bar(aes(fill = as.factor(Attrition_Flag)), color = "#FFFFFF") +
-  scale_fill_manual(values = c("royalblue", "#FF5733"),
-                    name = "Attrition Flag:",
-                    labels = c("Existing", "Attrited")) +
-  geom_text(aes(label = after_stat(count),
-                y = after_stat(count)),
-            stat = "count",
-            vjust = -0.5,
-            size = 10) +
-  labs(x = "Attrition Flag", y = "Count") +
-  ggtitle("Response variable: Attrition_Flag") +
-  theme(legend.position = c(.85, .85),
-        legend.background = element_rect(fill = "transparent"),
-        legend.direction = "vertical",
-        legend.title = element_text(size = 10),
-        aspect.ratio = 1) +
-  ylim(0, 10000)
+```{r attrition_flag_barplot, echo=FALSE, fig.width=8, fig.height=5}
+p1 <- ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
+    geom_bar(aes(fill = as.factor(Attrition_Flag)), color = "#FFFFFF") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    geom_text(aes(label = after_stat(count),
+                  y = after_stat(count)),
+              stat = "count",
+              vjust = -0.5,
+              size = 10) +
+    labs(x = "Attrition Flag", y = "Count") +
+    ggtitle("Response variable: Attrition_Flag") +
+    theme(legend.position = c(.85, .85),
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "vertical",
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1) +
+    ylim(0, 10000)
+
+p2 <- ggplot(bank_logistic_balanced, aes(x = as.factor(Attrition_Flag))) +
+    geom_bar(aes(fill = as.factor(Attrition_Flag)), color = "#FFFFFF") +
+    scale_fill_manual(values = c("royalblue", "#FF5733"),
+                      name = "Attrition Flag:",
+                      labels = c("Existing", "Attrited")) +
+    geom_text(aes(label = after_stat(count),
+                  y = after_stat(count)),
+              stat = "count",
+              vjust = -0.5,
+              size = 10) +
+    labs(x = "Attrition Flag", y = "Count") +
+    ggtitle("Response variable: Attrition_Flag") +
+    theme(legend.position = c(.85, .85),
+          legend.background = element_rect(fill = "transparent"),
+          legend.direction = "vertical",
+          legend.title = element_text(size = 10),
+          aspect.ratio = 1) +
+    ylim(0, 10000)
+
+p1 | p2
 ```
 
-To chek for possible correlation between the variables, we computed the correlation matrix and we plotted it using a heatmap. The correlation matrix is the following:
+```{r,echo=FALSE}
+cat("Proportion of attrited (original dataset):",
+    sum(bank$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
+cat("Proportion of attrited (ROSE):",
+    sum(bank_logistic_balanced$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
+```
 
-```{r correlation_matrix, echo=FALSE}
+To check for possible correlation between the variables, we computed the correlation matrix and we plotted it using a heatmap. The correlation matrix is the following:
+
+<!-- ```{r correlation_matrix, echo=FALSE} -->
+```{r correlation_matrix, message=FALSE, echo=FALSE, fig.width=10, fig.height=10}
 # Compute the correlation matrix
 corm <- bank_num |>
   corrr::correlate() |>
@@ -157,16 +236,27 @@ ggplot(bank, aes(x = log(Total_Trans_Amt), y = Total_Trans_Ct, color = as.factor
 The scatter plot represents the total number of transactions (on the y axis) agains the logarithm of the total transaction amount (on the x axis). The plot is colored by the `Attrition_Flag` variable, and we can indeed visually confirm the correlation among the two variables. However we can also spot that the churned customers are more concentrated in the lower left part of the plot.\
 This fact is also reflected in the distribution analysis of the two variables reported below.
   
-```{r trans_amt_distribution, echo=FALSE}
+```{r trans_amt_distribution, echo=FALSE, fig.width=8, fig.height=8}
 plot_continuous(bank, Total_Trans_Amt, "Total Transaction Amount", "Amount", 1000)
 ```
 
-```{r trans_ct_distribution}
+```{r trans_ct_distribution, fig.width=8, fig.height=8}
 # plot_discrete(bank, Total_Trans_Ct, "Total Transaction Count", "Count")
 plot_continuous(bank, Total_Trans_Ct, "Total Transaction Count", "Count", 5)
 ```
 
 # Models implementation
+
+Different models has been built to predict the `Attrition_Flag` variable and are presented in this section.
+In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cross validation with $k=10$. The metrics used are the following:
+
+* Accuracy
+* AUC
+* FPR (False Positive Rate)
+* FNR (False Negative Rate)
+* Confusion matrix (*only for a single static split*)
+
+The Dummy classifier has been taken as a baseline for comparison.
 
 ## Logistic regression
 
@@ -189,67 +279,8 @@ The final model has been built using the following variables:
 Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Moreover the `Marital_Status` variable has been converted into a binary variable, taking the levels "Married" and "Not Married" since this change helped improving the statitical significane of the variable in the final model. For the same reason, the variable `Income_Category` has also been converted into a binary variable, dividing the clients in two categories: those with an income less than 120K and those with an income more than 120K.\
 Both these changes have significantly improved the model performance as portrayed by the metrics explained below. An ANOVA test has also been performed to check the significance of the model.
 
-In order to assess the model performance, different effectiveness metrics have been used. These have been computed both by fitting the model using all the observations in the dataset and also by performing a k-fold cross validation with $k=10$. The metrics used are the following:
-
-* Accuracy
-* AUC
-* FPR (False Positive Rate)
-* FNR (False Negative Rate)
-* Confusion matrix (*only in the whole dataset case*)
-* AIC
-* BIC
-
-The Dummy classifier has been taken as a baseline for comparison.
 
 ```{r logistic_model_build, echo=FALSE}
-# Set working directory as this directory
-setwd(dirname(rstudioapi::getSourceEditorContext()$path))
-
-# Load the dataset and pre-process it
-bank_logistic <- read.csv("./datasets/BankChurners.csv", sep = ",")
-bank_logistic <- bank_logistic[, -c(1, 3, 5, 6, 9, 10, 14, 16, 17, 21, 22, 23)]
-bank_logistic$Attrition_Flag <- ifelse(bank_logistic$Attrition_Flag == "Attrited Customer", 1, 0)
-
-# Convert all categorical variables to factors and reorder the levels
-bank_logistic$Gender <- as.factor(bank_logistic$Gender)
-bank_logistic$Marital_Status <- as.factor(bank_logistic$Marital_Status)
-bank_logistic$Marital_Status <- forcats::fct_relevel(bank_logistic$Marital_Status,
-                                            "Unknown",
-                                            "Single",
-                                            "Married",
-                                            "Divorced")
-
-# Changing the levels of Marital_Status in either married or not married
-bank_logistic$Marital_Status <- fct_collapse(bank_logistic$Marital_Status,
-                                    "Married" = c("Married"),
-                                    "Not Married" = c("Divorced",
-                                                      "Single",
-                                                      "Unknown"))
-
-bank_logistic$Income_Category <- as.factor(bank_logistic$Income_Category)
-bank_logistic$Income_Category <- forcats::fct_relevel(bank_logistic$Income_Category,
-                                             "Unknown",
-                                             "Less than $40K",
-                                             "$40K - $60K",
-                                             "$60K - $80K",
-                                             "$80K - $120K",
-                                             "$120K +")
-
-# Changing the levels of income category into a binary variable:
-bank_logistic$Income_Category <- fct_collapse(bank_logistic$Income_Category,
-                                     "Less than 120K" = c("Unknown",
-                                                          "Less than $40K",
-                                                          "$40K - $60K",
-                                                          "$60K - $80K",
-                                                          "$80K - $120K"),
-                                     "More than 120K" = c("$120K +"))
-
-# Override the Total_Trans_Amt variable with its log !!!
-bank_logistic$Total_Trans_Amt <- log(bank_logistic$Total_Trans_Amt)
-
-# Standardization (optional) all columns except response and categorical
-bank_logistic[, -c(1, 2, 3, 4)] <- scale(bank_logistic[, -c(1, 2, 3, 4)])
-
 # Rebuiding and checking the model
 simple_logistic_model <- learn_logistic(bank_logistic)
 
@@ -287,32 +318,9 @@ From the results we can clearly see that the model is overall performing well. T
 
 ### Results on the synthetic dataset (ROSE)
 
-As noticed above, the dataset is characterized by a strong class imbalance:
-```{r}
-table(bank_logistic$Attrition_Flag)
-```
-
-```{r,echo=FALSE}
-cat("Attrited customers (rare class): ",sum(bank_logistic$Attrition_Flag==1))
-cat("Existing customers (maj class): ",sum(bank_logistic$Attrition_Flag==0))
-cat("Proportion of attrited:",
-    sum(bank_logistic$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
-```
-
 Let's apply *ROSE* package:
 ```{r}
 bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
-```
-
-```{r}
-table(bank_logistic_balanced$Attrition_Flag)
-```
-
-```{r,echo=FALSE}
-cat("Attrited customers (rare class): ",sum(bank_logistic_balanced$Attrition_Flag==1))
-cat("Existing customers (maj class): ",sum(bank_logistic_balanced$Attrition_Flag==0))
-cat("Proportion of attrited:",
-    sum(bank_logistic_balanced$Attrition_Flag==1)/sum(table(bank_logistic_balanced$Attrition_Flag))*100,"%")
 ```
 
 Now we can learn a logistic regression model on the new balanced dataset:
@@ -321,7 +329,7 @@ Now we can learn a logistic regression model on the new balanced dataset:
 ROSE_logistic_model <- learn_logistic(bank_logistic_balanced)
 ```
 
-For what concerns the effectiveness metrics on the original dataset:
+For what concerns the effectiveness metrics on the static trai test split:
 
 ```{r, message=FALSE, warning=FALSE}
 ROSE_logistic_results<- assess_logistic(ROSE_logistic_model, bank_logistic_balanced)
@@ -332,37 +340,6 @@ Instead, by computing a 10-fold CV:
 cv_logistic(bank_logistic_balanced)
 ```
 **Comment:** the accuracy of this model, as expected, is lower than one of the logistic model learnt on the unbalanced dataset. However, the difference with respect to the dummy classifier becomes definitely more evident. Regarding the AUC score, even its value is slightly lower than before, it still showcases how good is the fit of our model. The metric that really improves after applying ROSE is the FNR: the model learnt on the unbalanced dataset had an average FNR of 44.11%, while now it drops around 17.87%. Conversely, FPR increases from 3.02% to 17.85%, but since we don't know anything about the costs of the errors, we considered it better to have more balanced metrics for FPR and FNR.
-
-## Penalized regression
-
-From the dataset used for logistic regression we tried to apply both ridge and lasso penalizations when estimating the model. As we did for the logistic, we implemented a custom function to learn the model, which is based on the `glmnet` library.
-
-### Results on the original dataset
-
-```{r assess_ridge,warning=FALSE,message=FALSE}
-#------------------------------RIDGE MODEL--------------------------------------
-cv_penalized_regression(data = bank_logistic,k=10,response = "Attrition_Flag",lasso=FALSE)
-```
-
-```{r assess_lasso,warning=FALSE,message=FALSE}
-#------------------------------LASSO MODEL--------------------------------------
-cv_penalized_regression(data = bank_logistic,k=10,response = "Attrition_Flag",lasso=TRUE)
-```
-
-### Results on the synthetic dataset (ROSE)
-
-Now we build the models on the balanced (synthetic) dataset we used for logistic regression:
-
-```{r assess_ridge_ROSE,warning=FALSE,message=FALSE}
-#------------------------------RIDGE MODEL--------------------------------------
-cv_penalized_regression(data = bank_logistic_balanced,k=10,response = "Attrition_Flag",lasso=FALSE)
-```
-
-```{r assess_lasso_ROSE,warning=FALSE,message=FALSE}
-#------------------------------LASSO MODEL--------------------------------------
-cv_penalized_regression(data = bank_logistic_balanced,k=10,response = "Attrition_Flag",lasso=TRUE)
-```
-As we illustrated for the logistic regression, balancing the dataset results in a decreasing of the models accuracy, while the difference with respect to the dummy classifier becomes definitely more evident. Even though AUC score is now slightly lower than before, the FNR improves a lot. For the lasso model it decreases from 44.86%  to 17.82%, while for the ridge model the enhancement is even more evident: FNR decreases from 83.23% to 18.88%.
 
 ## GAM/Splines
 We also tried using a General Additive Model to predict the Attrition_Flag variable. At first we included all the variables in the model, using a spline approximation for all the non categorical variables, obtaining an accuracy of 96,42% (AUC 98.99%). 
@@ -641,3 +618,4 @@ cv_rf(bank_ensamble_balanced)
   
 # Interpretations/Conclusions
 
+| Model | Accuracy | AUC | FPR | FNR | Interpretability |
