@@ -100,6 +100,9 @@ bank_logistic$Total_Trans_Amt <- log(bank_logistic$Total_Trans_Amt)
 # Standardization (optional) all columns except response and categorical
 bank_logistic[, -c(1, 2, 3, 4)] <- scale(bank_logistic[, -c(1, 2, 3, 4)])
 
+# Rebuiding and checking the model
+simple_logistic_model <- learn_logistic(bank_logistic)
+
 # ROSE
 bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
 ```
@@ -112,7 +115,8 @@ The `BankChurners` dataset contains information about a bank's costumers and the
 
 With the exclusion of the first variable (`CLIENTNUM`), that is just an identification number, and the last two (`Naive_Bayes_Classifier...`) variables, the dataset contains 19 possible covariates to be used for prediction. Among these, there are 6 categorical variables and 13 numerical variables.
 
-The `Attrition_Flag` variable is the response variable and it is a binary variable. As it's possible to see form the following barplot, the dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable.
+The `Attrition_Flag` variable is the response variable and it is a binary variable. As it's possible to see form the following barplot, the dataset is unbalanced, with only 16.07% of the observations being positive, i.e. a churned costumer, for the `Attrition_Flag` variable. \
+For this reason, in the some of the models presented in this report, we attempted to balance the dataset using the *ROSE* package. Below the proportion for the originl dataset and the balanced one are reported.
 
 ```{r attrition_flag_barplot, echo=FALSE, fig.width=8, fig.height=5}
 p1 <- ggplot(bank, aes(x = as.factor(Attrition_Flag))) +
@@ -163,9 +167,8 @@ cat("Proportion of attrited (ROSE):",
     sum(bank_logistic_balanced$Attrition_Flag==1)/sum(table(bank_logistic$Attrition_Flag))*100,"%")
 ```
 
-To check for possible correlation between the variables, we computed the correlation matrix and we plotted it using a heatmap. The correlation matrix is the following:
+For what regards the available covariates, instead, we first checked for possible correlation between the variables by computing the correlation matrix and we plotted it using a heatmap. The correlation matrix is the following:
 
-<!-- ```{r correlation_matrix, echo=FALSE} -->
 ```{r correlation_matrix, message=FALSE, echo=FALSE, fig.width=10, fig.height=10}
 # Compute the correlation matrix
 corm <- bank_num |>
@@ -212,14 +215,30 @@ ggplot(corm, aes(rowname, fct_rev(colname),
 
 As it's possible to see from the first column, the majority of the variables are not highly correlated with the response variable, with the exception of the `Total_Trans_Ct` variable that has a correlation of 0.37. However, an important thing to notice is that the correlation matrix shows some variables that are highly correlated with each other. Among these we can highlight:
 
-* the `Avg_Open_To_Buy` and `Credit_Limit` variables, which are totally correlated;
+* the `Avg_Open_To_Buy` and `Credit_Limit` variables, which are totally correlated: this appeared to us particularly strange as its also highligted by the plot of the two variables below;
 * the `Months_on_book` and `Customer_Age` variables, that are reasonably correlated with a correlation of 0.79: indeed one expects that the number of months a customer has been with the bank is related to the customer's age;
 * the `Total_Trans_Amt` and `Total_Trans_Ct` variables, that show a correlation of 0.81;
 * the `Total_Revolving_Bal` and `Avg_Utilization_Ratio` variables, that are also highly correlated with a correlation of 0.62.
 
+As we can see from the plot below the plot of the two totally correlated variables `Avg_Open_To_Buy` and `Credit_Limit` shows a seemingly perfect linear relationship, which we found quite anomalous.\
+
+```{r avg_open_and_credit_line, echo=FALSE, fig.width=8, fig.height=8}
+# Plot of Avg_Open_To_Buy vs Credit_Limit
+ggplot(bank, aes(x = Credit_Limit, y = Avg_Open_To_Buy, color = as.factor(Attrition_Flag))) +
+  geom_point(alpha = .5) +
+  scale_color_manual(values = c("0" = "royalblue", "1" = "#FF5733"),
+                     name = "Attrition Flag:",
+                     labels = c("Existing", "Attrited")) +
+  labs(x = "Credit Limit", y = "Average Open to Buy") +
+  theme(legend.position = c(.85, .15),
+        legend.background = element_rect(fill = "transparent"),
+        legend.title = element_text(size = 10),
+        aspect.ratio = 1)
+```
+
 Since both the `Total_Trans_Amt` and `Total_Trans_Ct` variables are highly correlated between each other but, contrairly to the other variables, also show a significant correlation with the response variable, it made sense to plot the two variables in the following scatter plot to check for possible patterns.
 
-```{r transactions_scatterplot, echo=FALSE}
+```{r transactions_scatterplot, echo=FALSE, fig.width=8, fig.height=8}
 # Plot of Total_Trans_Ct vs Total_Trans_Amt
 ggplot(bank, aes(x = log(Total_Trans_Amt), y = Total_Trans_Ct, color = as.factor(Attrition_Flag))) +
   geom_point(alpha = .5) +
@@ -262,7 +281,6 @@ The Dummy classifier has been taken as a baseline for comparison.
 
 The first model we build in the attempt of predicting the response variable has been a logistic regression model using the $logit$ link function.\
 In the initial model we included all the covariates except those that had low correlation with the response variable. We further filtered the covariates selection by discarding the variables that had a $p-value$ higher than 0.05 in the `glm()` summary output, i.e. the variables that were not statistically significant in the prediction.\
-Possible multicollinearity problems, especially among the variables that showed high correlation in the exploratory analysis, were checked by looking at the Variance Inflation Factor (VIF) of the covariates.\
 The final model has been built using the following variables:
 
 * `Gender`: the gender of the customer
@@ -272,19 +290,32 @@ The final model has been built using the following variables:
 * `Months_Inactive_12_mon`: the number of months inactive in the last 12 months
 * `Contacts_Count_12_mon`: the number of contacts in the last 12 months
 * `Total_Revolving_Bal`: the total revolving balance on the credit card
-* `Total_Trans_Amt`: the total transaction amount in the last 12 months
+<!-- * `Total_Trans_Amt`: the total transaction amount in the last 12 months -->
 * `Total_Trans_Ct`: the total transaction count in the last 12 months
 * `Total_Ct_Chng_Q4_Q1`: the change in transaction count from Q4 to Q1
 
-Aditionally, looking at the data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable. Moreover the `Marital_Status` variable has been converted into a binary variable, taking the levels "Married" and "Not Married" since this change helped improving the statitical significane of the variable in the final model. For the same reason, the variable `Income_Category` has also been converted into a binary variable, dividing the clients in two categories: those with an income less than 120K and those with an income more than 120K.\
-Both these changes have significantly improved the model performance as portrayed by the metrics explained below. An ANOVA test has also been performed to check the significance of the model.
+ decided to remove the `Total_Trans_Amt` variable to avoid possible multicollinearity problems.\
+Aditionally, for this particular model, all of the numerical variables have been standardized to have a mean of 0 and a standard deviation of 1. Some covariates have also been slightly modified to improve the model performance. Among these we mention that:
 
+<!-- * looking at its data distribution it has been taken the logarihmic values of the `Total_Trans_Amt` variable; -->
+* the `Marital_Status` variable has been converted into a binary variable, taking the levels "Married" and "Not Married" since this change helped improving the statitical significane of the variable in the final model.
+* the variable `Income_Category` has also been converted into a binary variable, dividing the clients in two categories: those with an income less than 120K and those with an income more than 120K.\
+
+All of these changes have significantly improved the model performance as portrayed by the metrics explained below. An ANOVA test has also been performed to check the significance of the model.
+The results of the ANOVA test are the following:
+
+```{r logistic_model_anova}
+anova(simple_logistic_model, test = "Chisq")
+```
+
+As its possible to see all the covariates contribute in decreasing the deviance of the model, and they are all statistically significant. Looking at these results it's surely possible to see that the contribution in the deviance decrease of the two categorical variables `Marital_Status` and `Income_Category` is lower than the other variables, so an attempt to simplify the model by removing these 2 variables can be done. However, both for comparisons purposes and for the sake of the model performance, we decided to keep these variables in the model.\
+On the other hand, possible multicollinearity problems, especially among the variables that showed high correlation in the exploratory analysis, were checked by looking at the Variance Inflation Factor (VIF) of the covariates.\
 
 ```{r logistic_model_build, echo=FALSE}
-# Rebuiding and checking the model
-simple_logistic_model <- learn_logistic(bank_logistic)
-
+vif(simple_logistic_model)
 ```
+
+<!-- The covariates we were more worried of were the `Total_Trans_Ct` and `Total_Trans_Amt` since they showed a high correlation in the exploratory analysis. However, the VIF values are all below 10, which is a common threshold to consider multicollinearity as a problem. For this reason we decided to keep these variables since they indeed helped improving the model.\ -->
 
 ### Results on the original dataset
 
@@ -294,13 +325,10 @@ On the given dataset, the built logistic model summary is the following:
 summary(simple_logistic_model)
 ```
 
-The results of the ANOVA test are the following:
-
-```{r logistic_model_anova}
-anova(simple_logistic_model, test = "Chisq")
-```
-
-As its possible to see all the contribute in decreasing the deviance of the model, and they are all statistically significant.\
+<!-- The main thing we can notice from this summary is that, as expected, the two most impactful covariates are the `Total_Trans_Ct` and the `Total_Trans_Amt`. Surprisingly, their effect seems to be opposite, in particular: -->
+The main thing we can notice from this summary is that, as expected, the most impactful covariate is the `Total_Trans_Ct`.This has a negative coefficient, which means that the higher the total transaction count, the lower the probability of a customer to churn, just as we noticed from the original plot.
+From this we might deduce that the bank is able to satisfy clients that perform a high volume of transactions.\
+Additionally, the intercept of the model also has a significant impactwith a negative coefficient. This can be interpreted only if it makes sense for all of the covariates to be equal to 0, in this case this basically refers to a newly acquired costumer and indeed it seems that the probability of a new costumer to churn is lower than the probability of an existing costumer to churn.\
 
 For what concerns the effectiveness metrics, we measured the following results on the original dataset:
 
@@ -314,11 +342,13 @@ And similar results for the k-fold cross validation:
 cv_logistic(bank_logistic)
 ```
 
-From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the dataset. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $50\%$. The AIC and BIC values are also very low, which is a good sign for the model.
+From the results we can clearly see that the model is overall performing well. The accuracy is consistently over $90\%$ on all the folds, but this is not too surprising given the unbalance nature of the dataset. Good values have however been reached for the AUC and the FPR, with the worst metric being the FNR which falls just below $70\%$. This is of course a limit of this simple model and its also related to the unbalanced nature of the dataset. Indeed, as dicussed above, the main advantage of this model is the possiblity to interpret the coefficients of the covariates and to understand the impact of each of them on the response variable.
 
 ### Results on the synthetic dataset (ROSE)
 
+As said in the beginning we also tried to balance the dataset using the *ROSE* package.
 Let's apply *ROSE* package:
+
 ```{r}
 bank_logistic_balanced<- ROSE(Attrition_Flag~.,data=bank_logistic,seed = 123)$data
 ```
@@ -336,6 +366,7 @@ ROSE_logistic_results<- assess_logistic(ROSE_logistic_model, bank_logistic_balan
 ```
 
 Instead, by computing a 10-fold CV:
+
 ```{r, message=FALSE, warning=FALSE}
 cv_logistic(bank_logistic_balanced)
 ```
@@ -453,7 +484,7 @@ ROSE_gam_results<- assess_gam(ROSE_gamfit, bank_gam_balanced)
 cv_gam(bank_gam_balanced)
 ```
 
-## Decision Trees 
+<!-- ## Decision Trees 
 
 Here,we have tried to use the Decision Trees method via classification trees to consider modelling the predictor variable Attrition Flag.\
 We started with preprocessing the dataset on similar lines as done before for previous models and converted target variable Attrition flag into \
@@ -900,8 +931,7 @@ ggplot(all_trees, aes(x = Method, y = Value, fill = Method)) +
   facet_wrap(~Metric, scales = "free_y") +
   labs(title = "Comparison of Classification Tree Methods",
        x = "Method", y = "Value") +
-  theme_minimal()
-
+  theme_minimal() -->
 
 ## Ensemble Methods
 
@@ -1066,27 +1096,113 @@ cv_rf(bank_ensamble_balanced)
   
 # Interpretations/Conclusions
 
-| Models | Accuracy|  AUC | FPR | FNR | ROSE | interpetability|
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Logistic regression |  91.36 % | 93.44 % | 3.15 % | 46.1 % | NO | interpetability|
-|  | 81.41  %| 89.49  % | 18.44  % | 18.85  % | SI | interpetability|
-| GAM |  96.19  % | 98.79 % | 1.84 % | 14.62 % | NO | interpetability|
-|  |  84.48   % | 92.42  % | 17.22  % | 13.99  % | SI | interpetability|
-| Decision Trees |  acc |AUC | FPR | FNR | ROSE | interpetability|
-| Boost| 95.8 % |  98.58 % | 2.14 % | 14.94 % | NO | interpetability|
-|  | 88.29 % |  95.17 % | 12.1 % | 11.31 % | SI | interpetability|
-| Random Forest |  95.88 % | 98.53 % | 1.65 % | 18.63 % | NO | interpetability|
-|   | 88.7 % |  95.22 %  | 11.64 % | 10.98  % | SI | interpetability|
-| Logistic regression | acc|  AUC | FPR | FNR | ROSE | interpetability|
+In conlusion, we recall here them main results of the models we built:
 
-|                 Variable | Mean_Gini_Decrease |
-|          Total_Trans_Amt |        594.260721 |
-|           Total_Trans_Ct |        547.113190 |
-|      Total_Revolving_Bal |        417.708629 |
-|      Total_Ct_Chng_Q4_Q1 |        381.125419 |
-| Total_Relationship_Count |        229.326038 |
-|    Contacts_Count_12_mon |        100.106859 |
-|   Months_Inactive_12_mon |         95.318035 |
-|                   Gender |         41.048829 |
-|           Marital_Status |         28.676287 |
-|          Income_Category |          8.953285 |
+```{r final_df, echo=FALSE}
+df <- data.frame(
+  Models = c("Dummy Classifier", "Logistic Regression", "GAM", "Decision Trees", "Boost", "Random Forest"),
+  Accuracy = c(83.93, 91.36 , 96.19 , NA, 95.8 , 95.88 ),
+  AUC = c(0.5, 93.44 , 98.79 , NA, 98.58 , 98.53 ),
+  FPR = c(16.07, 3.15 , 1.84 , NA, 2.14 , 1.65 ),
+  FNR = c(0, 46.1 , 14.62 , NA, 14.94 , 18.63 )
+)
+```
+
+| Models              | Accuracy|    AUC  |   FPR   |    FNR  | ROSE | interpetability|
+|:-------------------:|:-------:|:-------:|:-------:|:-------:|:----:|:--------------:|
+| Logistic regression | 91.36 % | 93.44 % |  3.15 % |  46.1 % |  NO  | interpetability|
+|                     | 81.41 % | 89.49 % | 18.44 % | 18.85 % | SI   | interpetability|
+| GAM                 | 96.19 % | 98.79 % | 1.84 %  | 14.62 % | NO   | interpetability|
+|                     | 84.48 % | 92.42 % | 17.22 % | 13.99 % | SI   | interpetability|
+| Decision Trees      |  acc    | AUC     | FPR     | fNR     | ROSE | interpetability|
+| Boost               | 95.8 %  | 98.58 % | 2.14 %  | 14.94 % | NO   | interpetability|
+|                     | 88.29 % | 95.17 % | 12.1 %  | 11.31 % | SI   | interpetability|
+| Random Forest       | 95.88 % | 98.53 % | 1.65 %  | 18.63 % | NO   | interpetability|
+|                     | 88.7 %  | 95.22 % | 11.64 % | 10.98 % | SI   | interpetability|
+| Logistic regression | acc     |  AUC    |   FPR   |  FNR    | ROSE | interpetability|
+
+Visually we can compare the performance of the models using the following plots.
+
+* Accuracy:
+
+```{r accuracy_plot, echo=FALSE}
+# Barplot of accuracy values for different models
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = Accuracy, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(Accuracy, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "Accuracy (%)") +
+  ggtitle("Accuracy of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+```
+
+* AUC:
+  
+```{r auc_plot, echo=FALSE}
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = AUC, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(AUC, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "AUC (%)") +
+  ggtitle("AUC of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+```
+
+* FPR (False Posiitve Rate):
+  
+```{r fpr_plot, echo=FALSE}
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = FPR, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(FPR, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "FPR (%)") +
+  ggtitle("FPR of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+```
+
+* FNR (False Negative Rate):
+  
+```{r fnr_plot, echo=FALSE}
+df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
+  ggplot(aes(x = Models, y = FNR, fill = Models)) +
+  geom_bar(stat = "identity", color = "white", width = 0.5) +
+  scale_fill_brewer(palette = "Set2") +
+  geom_text(aes(label = paste(FNR, "%")),
+            vjust = -0.5, size = 4) +
+  labs(x = "Model", y = "FNR (%)") +
+  ggtitle("FNR of different models") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 46, hjust = 1))
+```
+
+We can also visually compre the ranking of variables importance built using the Random Forest Classifier in a 10-cross fold validation:
+  
+```{r rf_var_imp_plot, echo=FALSE}
+
+df2 <- data.frame(
+  Variable = c("Total_Trans_Amt", "Total_Trans_Ct", "Total_Revolving_Bal", "Total_Ct_Chng_Q4_Q1", 
+               "Total_Relationship_Count", "Contacts_Count_12_mon", "Months_Inactive_12_mon", 
+               "Gender", "Marital_Status", "Income_Category"),
+  Mean_Gini_Decrease = c(594.260721, 547.113190, 417.708629, 381.125419, 229.326038, 
+                          100.106859, 95.318035, 41.048829, 28.676287, 8.953285)
+)
+df2 %>%
+  ggplot(aes(x = Mean_Gini_Decrease, y = fct_reorder(Variable, Mean_Gini_Decrease))) +
+  geom_col(fill = "royalblue") +
+  geom_text(aes(label = round(Mean_Gini_Decrease, 2)),
+            hjust = -0.5, size = 4) +
+  xlim(0,680) +
+  labs(x = "Mean Gini Decrease", y = "Variable") +
+  ggtitle("Mean Gini Decrease of different variables") +
+  ggtitle("Variable Importance (Mean Gini Decrease)") +
+  theme(legend.position = "none")
+```

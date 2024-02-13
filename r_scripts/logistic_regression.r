@@ -10,7 +10,7 @@ library(ggplot2)
 # Learning function: f'_learn
 learn <- function(data) {
   # Logistic regression
-  model <- glm(Attrition_Flag ~ . - Total_Trans_Amt,
+  model <- glm(Attrition_Flag ~ .,
                data = data,
                family = binomial(link = "logit"))
   return(model)
@@ -242,6 +242,12 @@ bank[, -c(1, 2, 3, 4)] <- scale(bank[, -c(1, 2, 3, 4)])
 bank_logistic <- learn(bank)
 summary(bank_logistic)
 
+# Model with jus Total_Trans_Amt
+single_amt_model <- glm(Attrition_Flag ~ Total_Trans_Amt + Total_Trans_Ct,
+                        data = bank,
+                        family = binomial(link = "logit"))
+summary(single_amt_model)
+vif(single_amt_model)
 # ASSESSING THE MODEL ---------------------------------------------------------
 
 cat("Results on whole dataset:\n")

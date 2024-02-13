@@ -356,7 +356,7 @@ df %>% filter(!Models %in% c("Decision Trees","Dummy Classifier")) %>%
 
 # -----------------------------------------------------------------------------
 
-df <- data.frame(
+df2 <- data.frame(
   Variable = c("Total_Trans_Amt", "Total_Trans_Ct", "Total_Revolving_Bal", "Total_Ct_Chng_Q4_Q1", 
                "Total_Relationship_Count", "Contacts_Count_12_mon", "Months_Inactive_12_mon", 
                "Gender", "Marital_Status", "Income_Category"),
@@ -365,7 +365,7 @@ df <- data.frame(
 )
 
 # Horizontal barplot of the mean Gini decrease
-df %>%
+df2 %>%
   ggplot(aes(x = Mean_Gini_Decrease, y = fct_reorder(Variable, Mean_Gini_Decrease))) +
   geom_col(fill = "royalblue") +
   geom_text(aes(label = round(Mean_Gini_Decrease, 2)),

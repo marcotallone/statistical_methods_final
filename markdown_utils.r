@@ -148,7 +148,7 @@ plot_categorical <- function(dataset, variable, xlab) {
 # learn_logistic function: f'_learn_logistic
 learn_logistic <- function(data) {
   # Logistic regression
-  model <- glm(Attrition_Flag ~ .,
+  model <- glm(Attrition_Flag ~ . - Total_Trans_Amt,
                data = data,
                family = binomial(link = "logit"))
   return(model)
