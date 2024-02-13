@@ -456,9 +456,9 @@ cv_gam(bank_gam_balanced)
 ## Decision Trees 
 
 Here,we have tried to use the Decision Trees method via classification trees to consider modelling the predictor variable Attrition Flag.\
-We started with preprocessing the dataset on similar lines as done before for previous models and converted traget variable Attrition flag into \
+We started with preprocessing the dataset on similar lines as done before for previous models and converted target variable Attrition flag into \
 binary variable (0 and 1) and converted relevant categorical variables into factors.We took the approach of building classification tree model by \
-starting with dummy classifier ( as a baseline) followed by full tree and later optimising it tree with less variables(reduced tree model),\
+starting with dummy classifier (as a baseline model) followed by full tree and later optimising tree with less variables(reduced tree model),\
 k-fold tree and finally with hyperparameter tuned model.
 
 The final model (tuned one) has been built using the following variables:
@@ -507,15 +507,55 @@ trainIndex <- createDataPartition(bank$Attrition_Flag, p = 0.8, list = FALSE)
 train_data <- bank[trainIndex, ]
 validation_data <- bank[-trainIndex, ]
 ```
-# Classification tree for dummy classifier:
 
-# Dummy classifier: Predict the majority class for all instances with plot
+# Classification tree for dummy classifier
+# Dummy classifier: Predict the majority class for all instances
 ```
-majority_class <- levels(train_data$Attrition_Flag)[which.max(table(train_data$Attrition_Flag))]
-dummy_predictions <- rep(majority_class, nrow(train_data))
+majority_class_train <- levels(train_data$Attrition_Flag)[which.max(table(train_data$Attrition_Flag))]
+train_data$dummy_predictions <- rep(majority_class_train, nrow(train_data))
+majority_class_validation <- levels(validation_data$Attrition_Flag)[which.max(table(validation_data$Attrition_Flag))]
+validation_data$dummy_predictions <- rep(majority_class_validation, nrow(validation_data)
+# Build and print the confusion matrix
 conf_matrix <- table(train_data$Attrition_Flag, dummy_predictions)
+print(conf_matrix)
+# Plot the dummy tree (for visualization purposes)
 dummy_tree <- rpart(Attrition_Flag ~ dummy_predictions, data = train_data, method = "class")
 rpart.plot(dummy_tree, extra=1, digits=4, box.palette="auto")
+```
+predictions_dummy <- predict(dummy_tree, type = "class", newdata = validation_data)
+
+
+#Performance indices:
+# Calculate accuracy
+accuracy_dummy <- confusionMatrix(predictions_dummy, validation_data$Attrition_Flag)$overall['Accuracy']
+
+# Calculate precision
+precision_dummy <- confusionMatrix(predictions_dummy, validation_data$Attrition_Flag)$byClass['Precision']
+
+# Calculate recall
+recall_dummy <- confusionMatrix(predictions_dummy, validation_data$Attrition_Flag)$byClass['Sensitivity']
+
+# Calculate specificity
+specificity_dummy <- confusionMatrix(predictions_dummy, validation_data$Attrition_Flag)$byClass['Specificity']
+
+#Calculate FPR
+fpr_dummy <- round(1-specificity_dummy,2)*100
+
+#Calculate FNR
+fnr_dummy <- round(1-recall_dummy,2)*100
+
+# Calculate F1 score
+f1_score_dummy <- confusionMatrix(predictions_dummy, validation_data$Attrition_Flag)$byClass['F1']
+
+# Calculate AUC-ROC
+
+roc_dummy <- roc(validation_data$Attrition_Flag, as.numeric(predictions_dummy))
+auc_roc_dummy <- auc(roc_dummy)
+
+original_performance_dummy <- c(Accuracy = round(accuracy_dummy*100,digits=2), Precision = round(precision_dummy*100,digits=2), Recall = round(recall_dummy*100,digits=2), 
+                               FPR=fpr_dummy, FNR=fnr_dummy,Specificity = round(specificity_dummy*100,digits=2), F1_Score = round(f1_score_dummy*100,digits=2), AUC_ROC = round(auc_roc_dummy*100,digits=2))
+
+original_performance_dummy
 ```
 
 # Classification tree considering all predictors and response = Attrition_Flag
