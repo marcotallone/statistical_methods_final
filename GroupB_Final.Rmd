@@ -343,7 +343,7 @@ cv_logistic(bank_logistic_balanced)
 
 ## GAM/Splines
 We also tried using a General Additive Model to predict the Attrition_Flag variable. At first we included all the variables in the model, using a spline approximation for all the non categorical variables, obtaining an accuracy of 96,42% (AUC 98.99%). 
-Than we removed from the model the variables not statistically significant and we included as linear variables whose spline approximation has an expected degree of freedom minor or equal to 2 obtaining an accuracy of 96,46% (AUC 98.92%). 
+Than we removed from the model the variables not statistically significant and we included as linear variables whose spline approximation has an expected degree of freedom minor or equal to 2 obtaining an accuracy of 96.41% (AUC 98.93%). 
 The final model has been built using as linear:
 
 * `Customer_Age`: customer age in years
